@@ -10,7 +10,9 @@ export default function PrintPage() {
     const jobId = params.get('job')
     if (!jobId) { setError('Job ID ausente'); return }
 
-    fetch(`https://0yaig28xc6.execute-api.us-east-2.amazonaws.com/default/gerar-pdf-cv/data/${jobId}`)
+    const params2 = new URLSearchParams(window.location.search)
+    const apiUrl = params2.get('api') || 'https://enh8xz7m7f.execute-api.us-east-2.amazonaws.com/default/gerar-pdf-cv'
+    fetch(`${apiUrl}?data=${jobId}`)
       .then(r => {
         if (!r.ok) throw new Error('Dados não encontrados')
         return r.json()
