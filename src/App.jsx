@@ -175,7 +175,7 @@ export default function App() {
       }
 
       setExportStatus('Renderizando currículo…')
-      const res = await fetch('/api/pdf', {
+      const res = await fetch('https://enh8xz7m7f.execute-api.us-east-2.amazonaws.com/default/gerar-pdf-cv/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(exportData),
@@ -189,7 +189,7 @@ export default function App() {
       const { token } = await res.json()
 
       setExportStatus('Iniciando download…')
-      window.location.href = `/api/download/${token}`
+      window.location.href = `https://enh8xz7m7f.execute-api.us-east-2.amazonaws.com/default/gerar-pdf-cv/download/${token}`
 
       // Mantém o overlay até o IDM/browser capturar o download:
       // quando o IDM abre sua janela, o browser perde o foco (blur).
