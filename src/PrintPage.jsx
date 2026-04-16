@@ -6,12 +6,17 @@ export default function PrintPage() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    // Dados injetados pelo Puppeteer via evaluateOnNewDocument
+    if (window.__RESUME_DATA__) {
+      setData(window.__RESUME_DATA__)
+      return
+    }
+    // Fallback: busca via API (modo dev)
     const params = new URLSearchParams(window.location.search)
     const jobId = params.get('job')
     if (!jobId) { setError('Job ID ausente'); return }
 
-    const params2 = new URLSearchParams(window.location.search)
-    const apiUrl = params2.get('api') || 'https://enh8xz7m7f.execute-api.us-east-2.amazonaws.com/default/gerar-pdf-cv'
+    const apiUrl = params.get('api') || 'https://enh8xz7m7f.execute-api.us-east-2.amazonaws.com/default/gerar-pdf-cv'
     fetch(`${apiUrl}?data=${jobId}`)
       .then(r => {
         if (!r.ok) throw new Error('Dados não encontrados')
