@@ -161,22 +161,24 @@ export default function ResumePDF({ data }) {
         }}>
 
           {/* Foto */}
-          <View style={{ marginBottom: pt(24) }}>
-            {(data.photoCropped || data.photo) ? (
-              <Image
-                src={data.photoCropped || data.photo}
-                style={{ width: pt(100), height: pt(100), borderRadius: pt(50), objectFit: 'cover' }}
-              />
-            ) : (
-              <View style={{
-                width: pt(100), height: pt(100), borderRadius: pt(50),
-                backgroundColor: st.sidebarItemSubColor + '22',
-                justifyContent: 'center', alignItems: 'center',
-              }}>
-                <Text style={{ fontFamily: FONT, fontWeight: 400, fontSize: pt(10), color: st.sidebarItemSubColor }}>Foto</Text>
-              </View>
-            )}
-          </View>
+          {!data.photoHidden && (
+            <View style={{ marginBottom: pt(24) }}>
+              {(data.photoCropped || data.photo) ? (
+                <Image
+                  src={data.photoCropped || data.photo}
+                  style={{ width: pt(100), height: pt(100), borderRadius: pt(50), objectFit: 'cover' }}
+                />
+              ) : (
+                <View style={{
+                  width: pt(100), height: pt(100), borderRadius: pt(50),
+                  backgroundColor: st.sidebarItemSubColor + '22',
+                  justifyContent: 'center', alignItems: 'center',
+                }}>
+                  <Text style={{ fontFamily: FONT, fontWeight: 400, fontSize: pt(10), color: st.sidebarItemSubColor }}>Foto</Text>
+                </View>
+              )}
+            </View>
+          )}
 
           {/* Social */}
           {data.social.length > 0 && (

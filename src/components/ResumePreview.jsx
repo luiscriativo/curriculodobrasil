@@ -1,4 +1,7 @@
-import { MapPin, Mail, Phone } from 'lucide-react'
+import Template2Preview from './templates/Template2Preview.jsx'
+import Template3Preview from './templates/Template3Preview.jsx'
+import { PlatformIcon } from '../data/platformIcons.jsx'
+import { getFontFamily } from '../data/fonts.js'
 
 const DEFAULT = {
   sidebarBg: '#E8E4DC', sidebarTitleColor: '#2d2d2d',
@@ -11,6 +14,9 @@ const DEFAULT = {
 }
 
 export default function ResumePreview({ data, id = 'resume-preview' }) {
+  if (data.template === 'template2') return <Template2Preview data={data} id={id} />
+  if (data.template === 'template3') return <Template3Preview data={data} id={id} />
+
   const st = { ...DEFAULT, ...data.style }
 
   const SidebarSection = ({ title, children }) => (
@@ -45,7 +51,7 @@ export default function ResumePreview({ data, id = 'resume-preview' }) {
   return (
     <div id={id} style={{
       width: '210mm', minHeight: '297mm',
-      fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif',
+      fontFamily: getFontFamily(data.fontBody),
       display: 'flex', boxShadow: '0 4px 32px rgba(0,0,0,0.18)',
     }}>
 
@@ -55,39 +61,45 @@ export default function ResumePreview({ data, id = 'resume-preview' }) {
         padding: '32px 20px', display: 'flex',
         flexDirection: 'column', alignItems: 'center',
       }}>
-        <div style={{ marginBottom: '24px' }}>
-          {(() => {
-            const size = `${data.photoSize ?? 100}px`
-            const border = `2px solid ${data.photoBorderColor ?? st.sidebarItemSubColor}`
-            return data.photo ? (
-              <div style={{ width: size, height: size, borderRadius: '50%', overflow: 'hidden', border, flexShrink: 0 }}>
-                <img src={data.photo} alt="Foto de perfil" draggable={false} style={{
-                  width: '100%', height: '100%', objectFit: 'cover',
-                  objectPosition: `${data.photoX ?? 50}% ${data.photoY ?? 50}%`,
-                  transform: `scale(${(data.photoScale ?? 100) / 100})`,
-                  transformOrigin: `${data.photoX ?? 50}% ${data.photoY ?? 50}%`,
-                  display: 'block', pointerEvents: 'none',
-                }} />
-              </div>
-            ) : (
-              <div style={{
-                width: size, height: size, borderRadius: '50%',
-                backgroundColor: `${st.sidebarItemSubColor}22`,
-                border,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: st.sidebarItemSubColor, fontSize: '10px',
-                textAlign: 'center', lineHeight: '1.3',
-              }}>
-                Adicionar<br />Foto
-              </div>
-            )
-          })()}
-        </div>
+        {!data.photoHidden && (
+          <div style={{ marginBottom: '24px' }}>
+            {(() => {
+              const size = `${data.photoSize ?? 100}px`
+              const border = data.photoBorderHidden ? 'none' : `2px solid ${data.photoBorderColor ?? st.sidebarItemSubColor}`
+              return data.photo ? (
+                <div style={{ width: size, height: size, borderRadius: '50%', overflow: 'hidden', border, flexShrink: 0 }}>
+                  <img src={data.photo} alt="Foto de perfil" draggable={false} style={{
+                    width: '100%', height: '100%', objectFit: 'cover',
+                    objectPosition: `${data.photoX ?? 50}% ${data.photoY ?? 50}%`,
+                    transform: `scale(${(data.photoScale ?? 100) / 100})`,
+                    transformOrigin: `${data.photoX ?? 50}% ${data.photoY ?? 50}%`,
+                    display: 'block', pointerEvents: 'none',
+                    filter: data.photoGrayscale ? 'grayscale(1)' : 'none',
+                  }} />
+                </div>
+              ) : (
+                <div style={{
+                  width: size, height: size, borderRadius: '50%',
+                  backgroundColor: `${st.sidebarItemSubColor}22`,
+                  border,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: st.sidebarItemSubColor, fontSize: '10px',
+                  textAlign: 'center', lineHeight: '1.3',
+                }}>
+                  Adicionar<br />Foto
+                </div>
+              )
+            })()}
+          </div>
+        )}
 
         <SidebarSection title="SOCIAL">
           {data.social.map((s) => (
             <div key={s.id || s.platform}>
-              <p style={{ fontWeight: '700', fontSize: `${st.sidebarItemTitleSize}px`, color: st.sidebarItemTitleColor, marginBottom: '1px' }}>{s.platform}</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '1px' }}>
+                {s.icon && <PlatformIcon iconId={s.icon} size={Math.max(6, Math.round(st.sidebarItemTitleSize * 0.85))} color={st.sidebarItemSubColor} />}
+                <p style={{ fontWeight: '700', fontSize: `${st.sidebarItemTitleSize}px`, color: st.sidebarItemTitleColor }}>{s.platform}</p>
+              </div>
               <p style={{ fontSize: `${st.sidebarItemSubSize}px`, color: st.sidebarItemSubColor }}>{s.handle}</p>
             </div>
           ))}
@@ -117,25 +129,23 @@ export default function ResumePreview({ data, id = 'resume-preview' }) {
         width: '65%', padding: '36px 32px', backgroundColor: st.mainBg,
         display: 'flex', flexDirection: 'column',
       }}>
-        <h1 style={{ fontSize: `${st.mainNameSize}px`, fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.1em', color: st.mainNameColor, marginBottom: '4px', lineHeight: '1.1' }}>
+        <h1 style={{ fontSize: `${st.mainNameSize}px`, fontWeight: '800', fontFamily: getFontFamily(data.fontDisplay), textTransform: 'uppercase', letterSpacing: '0.1em', color: st.mainNameColor, marginBottom: '4px', lineHeight: '1.1' }}>
           {data.name}
         </h1>
         <p style={{ fontSize: `${st.mainSubtitleSize}px`, color: st.mainMutedColor, marginBottom: '16px', lineHeight: '1.5' }}>
           {data.subtitle}
         </p>
         <div style={{ marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <MapPin size={9} color={st.mainMutedColor} style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: `${st.mainContactSize}px`, color: st.mainBodyColor }}>{data.address}</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Mail size={9} color={st.mainMutedColor} style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: `${st.mainContactSize}px`, color: st.mainBodyColor }}>{data.email}</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Phone size={9} color={st.mainMutedColor} style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: `${st.mainContactSize}px`, color: st.mainBodyColor }}>{data.phone}</span>
-          </div>
+          {[
+            { value: data.address, iconId: data.addressIcon },
+            { value: data.email,   iconId: data.emailIcon },
+            { value: data.phone,   iconId: data.phoneIcon },
+          ].map(({ value, iconId }, i) => value && (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {iconId && <PlatformIcon iconId={iconId} size={Math.max(7, Math.round(st.mainContactSize * 0.85))} color={st.mainMutedColor} />}
+              <span style={{ fontSize: `${st.mainContactSize}px`, color: st.mainBodyColor }}>{value}</span>
+            </div>
+          ))}
         </div>
 
         <MainSection title="RESUMO PROFISSIONAL">
