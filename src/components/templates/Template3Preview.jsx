@@ -18,7 +18,7 @@ const DEFAULT = {
   // Fontes
   t3FontName:          'fjalla',
   t3FontSubtitle:      'poppins',
-  t3FontSectionTitle:  'poppins',
+  t3FontSectionTitle:  'inter',
   t3FontBody:          'lato',
   t3FontCompany:       'lato',
   t3FontRole:          'lato',
@@ -28,12 +28,12 @@ const DEFAULT = {
   t3PhotoHeight:       310,
   t3NameSize:          37,
   t3SubtitleSize:      11.5,
-  t3SectionTitleSize:  17.5,
-  t3JobTitleSize:      17,
-  t3BodySize:          13.5,
+  t3SectionTitleSize:  17,
+  t3JobTitleSize:      14.5,
+  t3BodySize:          14,
   t3DateSize:          13.5,
-  t3ContactSize:       10,
-  t3SocialSize:        10,
+  t3ContactSize:       11.5,
+  t3SocialSize:        11.5,
 }
 
 export default function Template3Preview({ data, id = 'resume-preview' }) {

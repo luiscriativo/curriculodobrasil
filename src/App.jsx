@@ -148,16 +148,16 @@ const initialData = {
     t3PhotoHeight:             310,
     t3NameSize:                37,
     t3SubtitleSize:            11.5,
-    t3SectionTitleSize:        17.5,
-    t3JobTitleSize:            17,
-    t3BodySize:                13.5,
+    t3SectionTitleSize:        17,
+    t3JobTitleSize:            14.5,
+    t3BodySize:                14,
     t3DateSize:                13.5,
-    t3ContactSize:             10,
-    t3SocialSize:              10,
+    t3ContactSize:             11.5,
+    t3SocialSize:              11.5,
     // ── Template 3 — fontes ──────────────────────────
     t3FontName:                'fjalla',
     t3FontSubtitle:            'poppins',
-    t3FontSectionTitle:        'poppins',
+    t3FontSectionTitle:        'inter',
     t3FontBody:                'lato',
     t3FontCompany:             'lato',
     t3FontRole:                'lato',
@@ -411,7 +411,7 @@ export default function App() {
           <div className="flex gap-2">
             <button
               onClick={handleSaveDraft}
-              className="flex-1 flex items-center justify-center gap-1.5 border border-gray-200 text-gray-600 py-2 px-3 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-colors font-medium text-xs"
+              className="flex-1 flex items-center justify-center gap-1.5 bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg hover:bg-gray-50 hover:border-gray-500 hover:text-gray-900 transition-colors font-medium text-xs shadow-sm"
               title="Salvar rascunho como .json"
             >
               <Download size={13} />
@@ -419,7 +419,7 @@ export default function App() {
             </button>
             <button
               onClick={() => importRef.current?.click()}
-              className="flex-1 flex items-center justify-center gap-1.5 border border-gray-200 text-gray-600 py-2 px-3 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-colors font-medium text-xs"
+              className="flex-1 flex items-center justify-center gap-1.5 bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg hover:bg-gray-50 hover:border-gray-500 hover:text-gray-900 transition-colors font-medium text-xs shadow-sm"
               title="Carregar rascunho .json"
             >
               <Upload size={13} />
@@ -432,7 +432,7 @@ export default function App() {
             <button
               onClick={handleExport}
               disabled={exporting}
-              className="w-full flex items-center justify-center gap-2 bg-gray-800 text-white py-3 px-4 rounded-lg hover:bg-gray-700 active:bg-gray-900 transition-colors font-semibold text-sm disabled:opacity-75 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-500 active:bg-blue-700 transition-colors font-semibold text-sm shadow-md shadow-blue-200 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {exporting
                 ? <Loader2 size={15} className="animate-spin" />

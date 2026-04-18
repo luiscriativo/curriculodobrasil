@@ -35,9 +35,9 @@ const AddButton = ({ onClick, label }) => (
   <button
     type="button"
     onClick={onClick}
-    className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 transition-colors mt-1 font-medium border border-dashed border-gray-200 hover:border-gray-400 rounded-md px-3 py-2 w-full justify-center"
+    className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-400 transition-colors mt-1 font-semibold rounded-md px-3 py-2.5 w-full justify-center"
   >
-    <Plus size={12} />
+    <Plus size={13} />
     {label}
   </button>
 )
@@ -389,7 +389,9 @@ export default function ResumeForm({ data, onChange }) {
               type="button"
               onClick={() => setActiveTab(id)}
               className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-                active ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                active
+                  ? 'bg-blue-50 border border-blue-200 text-blue-600 shadow-sm'
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-200 border border-transparent'
               }`}
             >
               <Icon size={15} />
@@ -695,7 +697,7 @@ export default function ResumeForm({ data, onChange }) {
                             )}
                           </div>
                         ))}
-                        <AddButton onClick={() => addBullet(exp.id)} label="Adicionar bullet" />
+                        <AddButton onClick={() => addBullet(exp.id)} label="Adicionar atividade" />
                       </div>
                     </div>
                   </div>
@@ -1000,7 +1002,7 @@ export default function ResumeForm({ data, onChange }) {
               t2FontName: 'raleway', t2FontSubtitle: 'lato', t2FontContact: 'lato',
               t2FontSectionTitle: 'lato', t2FontBody: 'lato', t2FontCompany: 'lato', t2FontRole: 'lato',
             }}))}
-            className="text-xs text-gray-400 hover:text-gray-700 transition-colors text-center mt-1 py-2 border border-dashed border-gray-200 rounded-lg hover:border-gray-400"
+            className="text-xs text-gray-500 hover:text-red-500 font-medium transition-colors text-center mt-1 py-2 border border-gray-300 hover:border-red-300 hover:bg-red-50 rounded-lg w-full"
           >
             Restaurar todos os padrões
           </button>
@@ -1080,12 +1082,12 @@ export default function ResumeForm({ data, onChange }) {
                   t3Master:           v,
                   t3NameSize:         Math.round((p.style.t3NameSize         ?? 37)   * ratio * 2) / 2,
                   t3SubtitleSize:     Math.round((p.style.t3SubtitleSize     ?? 11.5) * ratio * 2) / 2,
-                  t3SectionTitleSize: Math.round((p.style.t3SectionTitleSize ?? 17.5) * ratio * 2) / 2,
-                  t3JobTitleSize:     Math.round((p.style.t3JobTitleSize     ?? 17)   * ratio * 2) / 2,
-                  t3BodySize:         Math.round((p.style.t3BodySize         ?? 13.5) * ratio * 2) / 2,
+                  t3SectionTitleSize: Math.round((p.style.t3SectionTitleSize ?? 17)   * ratio * 2) / 2,
+                  t3JobTitleSize:     Math.round((p.style.t3JobTitleSize     ?? 14.5) * ratio * 2) / 2,
+                  t3BodySize:         Math.round((p.style.t3BodySize         ?? 14)   * ratio * 2) / 2,
                   t3DateSize:         Math.round((p.style.t3DateSize         ?? 13.5) * ratio * 2) / 2,
-                  t3ContactSize:      Math.round((p.style.t3ContactSize      ?? 10)   * ratio * 2) / 2,
-                  t3SocialSize:       Math.round((p.style.t3SocialSize       ?? 10)   * ratio * 2) / 2,
+                  t3ContactSize:      Math.round((p.style.t3ContactSize      ?? 11.5) * ratio * 2) / 2,
+                  t3SocialSize:       Math.round((p.style.t3SocialSize       ?? 11.5) * ratio * 2) / 2,
                 }}))
               }}
             >
@@ -1107,15 +1109,15 @@ export default function ResumeForm({ data, onChange }) {
               />
               <FontField
                 label="Títulos de seção"
-                sizeValue={data.style.t3SectionTitleSize ?? 17.5}
+                sizeValue={data.style.t3SectionTitleSize ?? 17}
                 onSizeChange={(v) => onChange((p) => ({ ...p, style: { ...p.style, t3SectionTitleSize: v } }))}
-                fontValue={data.style.t3FontSectionTitle ?? 'poppins'}
+                fontValue={data.style.t3FontSectionTitle ?? 'inter'}
                 onFontChange={(v) => onChange((p) => ({ ...p, style: { ...p.style, t3FontSectionTitle: v } }))}
                 min={10} max={32}
               />
               <FontField
                 label="Cargo / título do item"
-                sizeValue={data.style.t3JobTitleSize ?? 17}
+                sizeValue={data.style.t3JobTitleSize ?? 14.5}
                 onSizeChange={(v) => onChange((p) => ({ ...p, style: { ...p.style, t3JobTitleSize: v } }))}
                 fontValue={data.style.t3FontCompany ?? 'lato'}
                 onFontChange={(v) => onChange((p) => ({ ...p, style: { ...p.style, t3FontCompany: v } }))}
@@ -1123,7 +1125,7 @@ export default function ResumeForm({ data, onChange }) {
               />
               <FontField
                 label="Texto do corpo / bullets"
-                sizeValue={data.style.t3BodySize ?? 13.5}
+                sizeValue={data.style.t3BodySize ?? 14}
                 onSizeChange={(v) => onChange((p) => ({ ...p, style: { ...p.style, t3BodySize: v } }))}
                 fontValue={data.style.t3FontBody ?? 'lato'}
                 onFontChange={(v) => onChange((p) => ({ ...p, style: { ...p.style, t3FontBody: v } }))}
@@ -1139,7 +1141,7 @@ export default function ResumeForm({ data, onChange }) {
               />
               <FontField
                 label="Contato (endereço, telefone, email)"
-                sizeValue={data.style.t3ContactSize ?? 10}
+                sizeValue={data.style.t3ContactSize ?? 11.5}
                 onSizeChange={(v) => onChange((p) => ({ ...p, style: { ...p.style, t3ContactSize: v } }))}
                 fontValue={data.style.t3FontBody ?? 'lato'}
                 onFontChange={(v) => onChange((p) => ({ ...p, style: { ...p.style, t3FontBody: v } }))}
@@ -1147,7 +1149,7 @@ export default function ResumeForm({ data, onChange }) {
               />
               <FontField
                 label="Redes sociais"
-                sizeValue={data.style.t3SocialSize ?? 10}
+                sizeValue={data.style.t3SocialSize ?? 11.5}
                 onSizeChange={(v) => onChange((p) => ({ ...p, style: { ...p.style, t3SocialSize: v } }))}
                 fontValue={data.style.t3FontBody ?? 'lato'}
                 onFontChange={(v) => onChange((p) => ({ ...p, style: { ...p.style, t3FontBody: v } }))}
@@ -1169,13 +1171,13 @@ export default function ResumeForm({ data, onChange }) {
               t3SectionTitleColor: '#1a1a1a', t3JobTitleColor: '#1a1a1a',
               t3CompanyColor: '#6b7280', t3BodyColor: '#3d3d3d', t3DateColor: '#6b7280',
               t3Master: 9, t3PhotoHeight: 310,
-              t3NameSize: 37, t3SubtitleSize: 11.5, t3SectionTitleSize: 17.5,
-              t3JobTitleSize: 17, t3BodySize: 13.5, t3DateSize: 13.5, t3ContactSize: 10, t3SocialSize: 10,
+              t3NameSize: 37, t3SubtitleSize: 11.5, t3SectionTitleSize: 17,
+              t3JobTitleSize: 14.5, t3BodySize: 14, t3DateSize: 13.5, t3ContactSize: 11.5, t3SocialSize: 11.5,
               t3FontName: 'fjalla', t3FontSubtitle: 'poppins',
-              t3FontSectionTitle: 'poppins',
+              t3FontSectionTitle: 'inter',
               t3FontBody: 'lato', t3FontCompany: 'lato', t3FontRole: 'lato',
             }}))}
-            className="text-xs text-gray-400 hover:text-gray-700 transition-colors text-center mt-1 py-2 border border-dashed border-gray-200 rounded-lg hover:border-gray-400"
+            className="text-xs text-gray-500 hover:text-red-500 font-medium transition-colors text-center mt-1 py-2 border border-gray-300 hover:border-red-300 hover:bg-red-50 rounded-lg w-full"
           >
             Restaurar todos os padrões
           </button>
@@ -1275,7 +1277,7 @@ export default function ResumeForm({ data, onChange }) {
               mainMaster: 10, mainNameSize: 26, mainSubtitleSize: 10, mainContactSize: 10,
               mainSectionTitleSize: 9, mainBodySize: 10, mainCompanySize: 11, mainRoleSize: 10,
             }}))}
-            className="text-xs text-gray-400 hover:text-gray-700 transition-colors text-center mt-1 py-2 border border-dashed border-gray-200 rounded-lg hover:border-gray-400"
+            className="text-xs text-gray-500 hover:text-red-500 font-medium transition-colors text-center mt-1 py-2 border border-gray-300 hover:border-red-300 hover:bg-red-50 rounded-lg w-full"
           >
             Restaurar todos os padrões
           </button>
