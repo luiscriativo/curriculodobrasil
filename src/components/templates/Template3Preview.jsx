@@ -213,7 +213,7 @@ export default function Template3Preview({ data, id = 'resume-preview' }) {
         }}>
 
           {/* Experiências */}
-          {data.experiences?.length > 0 && (
+          {data.experiences?.some(e => e.company?.trim() || e.role?.trim()) && (
             <div style={{ marginBottom: '20px' }}>
               <h2 style={{
                 fontFamily: getFontFamily(st.t3FontSectionTitle ?? data.fontDisplay),
@@ -280,7 +280,7 @@ export default function Template3Preview({ data, id = 'resume-preview' }) {
           )}
 
           {/* Formação */}
-          {data.education?.length > 0 && (
+          {data.education?.some(e => e.degree?.trim()) && (
             <div style={{ marginBottom: '20px' }}>
               <h2 style={{
                 fontFamily: getFontFamily(st.t3FontSectionTitle ?? data.fontDisplay),
@@ -331,10 +331,10 @@ export default function Template3Preview({ data, id = 'resume-preview' }) {
           )}
 
           {/* Habilidades + Referências — duas colunas no rodapé */}
-          {(data.skills?.length > 0 || data.references?.length > 0) && (
+          {(data.skills?.some(s => s.name?.trim()) || data.references?.some(r => r.name?.trim())) && (
             <div style={{ display: 'flex', gap: '24px', marginTop: 'auto', paddingTop: '8px' }}>
 
-              {data.skills?.length > 0 && (
+              {data.skills?.some(s => s.name?.trim()) && (
                 <div style={{ flex: 1 }}>
                   <h2 style={{
                     fontFamily: getFontFamily(st.t3FontSectionTitle ?? data.fontDisplay),
@@ -360,7 +360,7 @@ export default function Template3Preview({ data, id = 'resume-preview' }) {
                 </div>
               )}
 
-              {data.references?.length > 0 && (
+              {data.references?.some(r => r.name?.trim()) && (
                 <div style={{ flex: 1 }}>
                   <h2 style={{
                     fontFamily: getFontFamily(st.t3FontSectionTitle ?? data.fontDisplay),

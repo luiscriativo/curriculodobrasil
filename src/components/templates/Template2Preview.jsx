@@ -171,7 +171,7 @@ export default function Template2Preview({ data, id = 'resume-preview' }) {
         <div style={{ width: '38%', flexShrink: 0 }}>
 
           {/* Formação */}
-          {data.education?.length > 0 && (
+          {data.education?.some(e => e.degree?.trim()) && (
             <div style={{ marginBottom: '24px' }}>
               <SectionTitle>FORMAÇÃO ACADÊMICA</SectionTitle>
               {data.education.map((edu) => (
@@ -193,7 +193,7 @@ export default function Template2Preview({ data, id = 'resume-preview' }) {
           )}
 
           {/* Habilidades */}
-          {data.skills?.length > 0 && (
+          {data.skills?.some(s => s.name?.trim()) && (
             <div style={{ marginBottom: '24px' }}>
               <SectionTitle>HABILIDADES</SectionTitle>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -207,7 +207,7 @@ export default function Template2Preview({ data, id = 'resume-preview' }) {
           )}
 
           {/* Prêmios */}
-          {data.awards?.length > 0 && (
+          {data.awards?.some(a => a.title?.trim()) && (
             <div style={{ marginBottom: '24px' }}>
               <SectionTitle>PRÊMIOS E CONQUISTAS</SectionTitle>
               {data.awards.map((award) => (
@@ -238,7 +238,7 @@ export default function Template2Preview({ data, id = 'resume-preview' }) {
 
         {/* RIGHT: Experiências */}
         <div style={{ flex: 1 }}>
-          {data.experiences?.length > 0 && (
+          {data.experiences?.some(e => e.company?.trim() || e.role?.trim()) && (
             <div>
               <SectionTitle>EXPERIÊNCIA PROFISSIONAL</SectionTitle>
               {data.experiences.map((exp) => (

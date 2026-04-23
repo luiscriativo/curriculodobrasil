@@ -93,35 +93,41 @@ export default function ResumePreview({ data, id = 'resume-preview' }) {
           </div>
         )}
 
-        <SidebarSection title="SOCIAL">
-          {data.social.map((s) => (
-            <div key={s.id || s.platform}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '1px' }}>
-                {s.icon && <PlatformIcon iconId={s.icon} size={Math.max(6, Math.round(st.sidebarItemTitleSize * 0.85))} color={st.sidebarItemSubColor} />}
-                <p style={{ fontWeight: '700', fontSize: `${st.sidebarItemTitleSize}px`, color: st.sidebarItemTitleColor }}>{s.platform}</p>
+        {data.social?.some(s => /[a-zA-Z0-9]/.test(s.handle ?? '')) && (
+          <SidebarSection title="SOCIAL">
+            {data.social.filter(s => /[a-zA-Z0-9]/.test(s.handle ?? '')).map((s) => (
+              <div key={s.id || s.platform}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '1px' }}>
+                  {s.icon && <PlatformIcon iconId={s.icon} size={Math.max(6, Math.round(st.sidebarItemTitleSize * 0.85))} color={st.sidebarItemSubColor} />}
+                  <p style={{ fontWeight: '700', fontSize: `${st.sidebarItemTitleSize}px`, color: st.sidebarItemTitleColor }}>{s.platform}</p>
+                </div>
+                <p style={{ fontSize: `${st.sidebarItemSubSize}px`, color: st.sidebarItemSubColor }}>{s.handle}</p>
               </div>
-              <p style={{ fontSize: `${st.sidebarItemSubSize}px`, color: st.sidebarItemSubColor }}>{s.handle}</p>
-            </div>
-          ))}
-        </SidebarSection>
+            ))}
+          </SidebarSection>
+        )}
 
-        <SidebarSection title="FORMAÇÃO ACADÊMICA">
-          {data.education.map((e) => (
-            <div key={e.id} style={{ marginBottom: '6px' }}>
-              <p style={{ fontWeight: '700', fontSize: `${st.sidebarItemTitleSize}px`, color: st.sidebarItemTitleColor, lineHeight: '1.4', marginBottom: '2px' }}>{e.degree}</p>
-              <p style={{ fontSize: `${st.sidebarItemSubSize}px`, color: st.sidebarItemSubColor, fontStyle: 'italic' }}>{e.institution}</p>
-            </div>
-          ))}
-        </SidebarSection>
+        {data.education?.some(e => e.degree?.trim()) && (
+          <SidebarSection title="FORMAÇÃO ACADÊMICA">
+            {data.education.filter(e => e.degree?.trim()).map((e) => (
+              <div key={e.id} style={{ marginBottom: '6px' }}>
+                <p style={{ fontWeight: '700', fontSize: `${st.sidebarItemTitleSize}px`, color: st.sidebarItemTitleColor, lineHeight: '1.4', marginBottom: '2px' }}>{e.degree}</p>
+                <p style={{ fontSize: `${st.sidebarItemSubSize}px`, color: st.sidebarItemSubColor, fontStyle: 'italic' }}>{e.institution}</p>
+              </div>
+            ))}
+          </SidebarSection>
+        )}
 
-        <SidebarSection title="ESPECIALIZAÇÕES">
-          {data.specializations.map((s) => (
-            <div key={s.id} style={{ marginBottom: '6px' }}>
-              <p style={{ fontWeight: '700', fontSize: `${st.sidebarItemTitleSize}px`, color: st.sidebarItemTitleColor, marginBottom: '1px' }}>{s.name}</p>
-              <p style={{ fontSize: `${st.sidebarItemSubSize}px`, color: st.sidebarItemSubColor, fontStyle: 'italic' }}>{s.institution}</p>
-            </div>
-          ))}
-        </SidebarSection>
+        {data.specializations?.some(s => s.name?.trim()) && (
+          <SidebarSection title="ESPECIALIZAÇÕES">
+            {data.specializations.filter(s => s.name?.trim()).map((s) => (
+              <div key={s.id} style={{ marginBottom: '6px' }}>
+                <p style={{ fontWeight: '700', fontSize: `${st.sidebarItemTitleSize}px`, color: st.sidebarItemTitleColor, marginBottom: '1px' }}>{s.name}</p>
+                <p style={{ fontSize: `${st.sidebarItemSubSize}px`, color: st.sidebarItemSubColor, fontStyle: 'italic' }}>{s.institution}</p>
+              </div>
+            ))}
+          </SidebarSection>
+        )}
       </div>
 
       {/* ── MAIN ─────────────────────────────────────────────────────────── */}
@@ -148,11 +154,14 @@ export default function ResumePreview({ data, id = 'resume-preview' }) {
           ))}
         </div>
 
-        <MainSection title="RESUMO PROFISSIONAL">
-          <p style={{ fontSize: `${st.mainBodySize}px`, color: st.mainBodyColor, lineHeight: '1.7' }}>{data.summary}</p>
-        </MainSection>
+        {data.summary?.trim() && (
+          <MainSection title="RESUMO PROFISSIONAL">
+            <p style={{ fontSize: `${st.mainBodySize}px`, color: st.mainBodyColor, lineHeight: '1.7' }}>{data.summary}</p>
+          </MainSection>
+        )}
 
-        <MainSection title="EXPERIÊNCIAS DE TRABALHO">
+        {data.experiences?.some(e => e.company?.trim() || e.role?.trim()) && (
+          <MainSection title="EXPERIÊNCIAS DE TRABALHO">
           {data.experiences.map((exp) => (
             <div key={exp.id} style={{ marginBottom: '16px' }}>
               <p style={{ fontWeight: '700', fontSize: `${st.mainCompanySize}px`, color: st.mainBodyColor, marginBottom: '2px' }}>{exp.company}</p>
@@ -164,7 +173,8 @@ export default function ResumePreview({ data, id = 'resume-preview' }) {
               ))}
             </div>
           ))}
-        </MainSection>
+          </MainSection>
+        )}
       </div>
     </div>
   )
