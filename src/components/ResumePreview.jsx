@@ -108,7 +108,7 @@ export default function ResumePreview({ data, id = 'resume-preview' }) {
         )}
 
         {data.education?.some(e => e.degree?.trim()) && (
-          <SidebarSection title="FORMAÇÃO ACADÊMICA">
+          <SidebarSection title="FORMAÇÃO">
             {data.education.filter(e => e.degree?.trim()).map((e) => (
               <div key={e.id} style={{ marginBottom: '6px' }}>
                 <p style={{ fontWeight: '700', fontSize: `${st.sidebarItemTitleSize}px`, color: st.sidebarItemTitleColor, lineHeight: '1.4', marginBottom: '2px' }}>{e.degree}</p>

@@ -207,7 +207,7 @@ export default function ResumePDF({ data }) {
 
           {/* Formação */}
           {data.education.length > 0 && (
-            <SidebarSection title="FORMAÇÃO ACADÊMICA">
+            <SidebarSection title="FORMAÇÃO">
               {data.education.map((item, i) => (
                 <View key={i} style={{ marginBottom: pt(8) }}>
                   <Text style={{

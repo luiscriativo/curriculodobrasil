@@ -714,19 +714,20 @@ export default function ResumeForm({ data, onChange }) {
       {activeTab === 'formacao' && (
         <FieldGroup>
           <div>
-            <Label>Formação Acadêmica</Label>
+            <Label>Formação</Label>
+            <p className="text-xs text-gray-400 mt-0.5 mb-1">Ensino médio, técnico, graduação, pós-graduação…</p>
             <div className="flex flex-col gap-2 mt-1">
               {data.education.map((edu) => (
                 <Card key={edu.id}>
                   <div className="flex items-start gap-2">
                     <div className="flex-1 flex flex-col gap-2">
                       <div>
-                        <Label>Curso / Grau</Label>
-                        <Input value={edu.degree} onChange={(e) => updateEdu(edu.id, 'degree', e.target.value)} placeholder="Graduação em..." />
+                        <Label>Nível / Curso</Label>
+                        <Input value={edu.degree} onChange={(e) => updateEdu(edu.id, 'degree', e.target.value)} placeholder="Ex: Ensino Médio Completo, Graduação em Design…" />
                       </div>
                       <div>
-                        <Label>Instituição e Período</Label>
-                        <Input value={edu.institution} onChange={(e) => updateEdu(edu.id, 'institution', e.target.value)} placeholder="Instituição / 2022 – 2024" />
+                        <Label>Escola / Instituição e Período</Label>
+                        <Input value={edu.institution} onChange={(e) => updateEdu(edu.id, 'institution', e.target.value)} placeholder="Ex: E.E. João Silva / 2019 – 2021" />
                       </div>
                       {data.template === 'template3' && (
                         <div>

@@ -173,7 +173,7 @@ export default function Template2Preview({ data, id = 'resume-preview' }) {
           {/* Formação */}
           {data.education?.some(e => e.degree?.trim()) && (
             <div style={{ marginBottom: '24px' }}>
-              <SectionTitle>FORMAÇÃO ACADÊMICA</SectionTitle>
+              <SectionTitle>FORMAÇÃO</SectionTitle>
               {data.education.map((edu) => (
                 <div key={edu.id} style={{ marginBottom: '14px' }}>
                   <p style={{
