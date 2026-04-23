@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
-import { Plus, Trash2, User, FileText, Briefcase, GraduationCap, Palette } from 'lucide-react'
+import { Plus, Trash2, User, FileText, Briefcase, GraduationCap, Palette, ChevronUp, ChevronDown } from 'lucide-react'
 import { IconPicker } from '../data/platformIcons.jsx'
 import { FONTS, FONT_GROUPS, FONT_MAP } from '../data/fonts.js'
 
@@ -51,6 +51,37 @@ const RemoveButton = ({ onClick }) => (
   >
     <Trash2 size={13} />
   </button>
+)
+
+// ── Reorder helpers ───────────────────────────────────────────────────────────
+const moveItem = (arr, from, to) => {
+  const next = [...arr]
+  const [item] = next.splice(from, 1)
+  next.splice(to, 0, item)
+  return next
+}
+
+const ReorderButtons = ({ index, total, onMove }) => (
+  <div className="flex flex-col gap-0.5 flex-shrink-0">
+    <button
+      type="button"
+      onClick={() => onMove(index, index - 1)}
+      disabled={index === 0}
+      className="p-0.5 rounded text-gray-300 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+      title="Mover para cima"
+    >
+      <ChevronUp size={13} />
+    </button>
+    <button
+      type="button"
+      onClick={() => onMove(index, index + 1)}
+      disabled={index === total - 1}
+      className="p-0.5 rounded text-gray-300 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+      title="Mover para baixo"
+    >
+      <ChevronDown size={13} />
+    </button>
+  </div>
 )
 
 const Card = ({ children }) => (
@@ -321,6 +352,8 @@ export default function ResumeForm({ data, onChange }) {
     onChange((prev) => ({ ...prev, social: [...prev.social, { id: uid(), platform: '', handle: '', icon: null }] }))
   const removeSocial = (id) =>
     onChange((prev) => ({ ...prev, social: prev.social.filter((s) => s.id !== id) }))
+  const moveSocial = (from, to) =>
+    onChange((prev) => ({ ...prev, social: moveItem(prev.social, from, to) }))
 
   // Experiences
   const updateExp = (id, field, value) =>
@@ -329,6 +362,8 @@ export default function ResumeForm({ data, onChange }) {
     onChange((prev) => ({ ...prev, experiences: [...prev.experiences, { id: uid(), company: '', role: '', description: '', bullets: [''] }] }))
   const removeExp = (id) =>
     onChange((prev) => ({ ...prev, experiences: prev.experiences.filter((e) => e.id !== id) }))
+  const moveExp = (from, to) =>
+    onChange((prev) => ({ ...prev, experiences: moveItem(prev.experiences, from, to) }))
   const updateBullet = (expId, i, value) =>
     onChange((prev) => ({ ...prev, experiences: prev.experiences.map((e) => e.id === expId ? { ...e, bullets: e.bullets.map((b, idx) => idx === i ? value : b) } : e) }))
   const addBullet = (expId) =>
@@ -343,6 +378,8 @@ export default function ResumeForm({ data, onChange }) {
     onChange((prev) => ({ ...prev, education: [...prev.education, { id: uid(), degree: '', institution: '' }] }))
   const removeEdu = (id) =>
     onChange((prev) => ({ ...prev, education: prev.education.filter((e) => e.id !== id) }))
+  const moveEdu = (from, to) =>
+    onChange((prev) => ({ ...prev, education: moveItem(prev.education, from, to) }))
 
   // Specializations
   const updateSpec = (id, field, value) =>
@@ -351,6 +388,8 @@ export default function ResumeForm({ data, onChange }) {
     onChange((prev) => ({ ...prev, specializations: [...prev.specializations, { id: uid(), name: '', institution: '' }] }))
   const removeSpec = (id) =>
     onChange((prev) => ({ ...prev, specializations: prev.specializations.filter((s) => s.id !== id) }))
+  const moveSpec = (from, to) =>
+    onChange((prev) => ({ ...prev, specializations: moveItem(prev.specializations, from, to) }))
 
   // Skills (template 2)
   const updateSkill = (id, value) =>
@@ -359,6 +398,8 @@ export default function ResumeForm({ data, onChange }) {
     onChange((prev) => ({ ...prev, skills: [...(prev.skills ?? []), { id: uid(), name: '' }] }))
   const removeSkill = (id) =>
     onChange((prev) => ({ ...prev, skills: (prev.skills ?? []).filter((s) => s.id !== id) }))
+  const moveSkill = (from, to) =>
+    onChange((prev) => ({ ...prev, skills: moveItem(prev.skills ?? [], from, to) }))
 
   // Awards (template 2)
   const updateAward = (id, field, value) =>
@@ -367,6 +408,8 @@ export default function ResumeForm({ data, onChange }) {
     onChange((prev) => ({ ...prev, awards: [...(prev.awards ?? []), { id: uid(), title: '', organization: '', yearLocation: '' }] }))
   const removeAward = (id) =>
     onChange((prev) => ({ ...prev, awards: (prev.awards ?? []).filter((a) => a.id !== id) }))
+  const moveAward = (from, to) =>
+    onChange((prev) => ({ ...prev, awards: moveItem(prev.awards ?? [], from, to) }))
 
   // References (template 3)
   const updateReference = (id, field, value) =>
@@ -375,6 +418,8 @@ export default function ResumeForm({ data, onChange }) {
     onChange((prev) => ({ ...prev, references: [...(prev.references ?? []), { id: uid(), name: '', title: '', location: '', email: '' }] }))
   const removeReference = (id) =>
     onChange((prev) => ({ ...prev, references: (prev.references ?? []).filter((r) => r.id !== id) }))
+  const moveReference = (from, to) =>
+    onChange((prev) => ({ ...prev, references: moveItem(prev.references ?? [], from, to) }))
 
   return (
     <div className="flex flex-col gap-0">
@@ -616,9 +661,10 @@ export default function ResumeForm({ data, onChange }) {
           <div className="pt-1">
             <Label>Redes Sociais</Label>
             <div className="flex flex-col gap-2 mt-1">
-              {data.social.map((s) => (
+              {data.social.map((s, idx) => (
                 <Card key={s.id}>
                   <div className="flex items-start gap-2">
+                    <ReorderButtons index={idx} total={data.social.length} onMove={moveSocial} />
                     <div className="flex-1 flex flex-col gap-2">
                       <div>
                         <div className="flex items-center justify-between mb-1">
@@ -652,9 +698,10 @@ export default function ResumeForm({ data, onChange }) {
             </p>
           )}
           <div className="flex flex-col gap-3">
-            {data.experiences.map((exp) => (
+            {data.experiences.map((exp, idx) => (
               <Card key={exp.id}>
                 <div className="flex justify-between items-start gap-2">
+                  <ReorderButtons index={idx} total={data.experiences.length} onMove={moveExp} />
                   <div className="flex-1 flex flex-col gap-2">
                     {data.template === 'template2' ? (
                       <>
@@ -717,9 +764,10 @@ export default function ResumeForm({ data, onChange }) {
             <Label>Formação</Label>
             <p className="text-xs text-gray-400 mt-0.5 mb-1">Ensino médio, técnico, graduação, pós-graduação…</p>
             <div className="flex flex-col gap-2 mt-1">
-              {data.education.map((edu) => (
+              {data.education.map((edu, idx) => (
                 <Card key={edu.id}>
                   <div className="flex items-start gap-2">
+                    <ReorderButtons index={idx} total={data.education.length} onMove={moveEdu} />
                     <div className="flex-1 flex flex-col gap-2">
                       <div>
                         <Label>Nível / Curso</Label>
@@ -749,9 +797,10 @@ export default function ResumeForm({ data, onChange }) {
             <div className="pt-1">
               <Label>Especializações</Label>
               <div className="flex flex-col gap-2 mt-1">
-                {data.specializations.map((spec) => (
+                {data.specializations.map((spec, idx) => (
                   <Card key={spec.id}>
                     <div className="flex items-start gap-2">
+                      <ReorderButtons index={idx} total={data.specializations.length} onMove={moveSpec} />
                       <div className="flex-1 flex flex-col gap-2">
                         <div>
                           <Label>Nome do Curso</Label>
@@ -776,8 +825,9 @@ export default function ResumeForm({ data, onChange }) {
             <div className="pt-1">
               <Label>Habilidades</Label>
               <div className="flex flex-col gap-2 mt-1">
-                {(data.skills ?? []).map((skill) => (
+                {(data.skills ?? []).map((skill, idx) => (
                   <div key={skill.id} className="flex items-center gap-2">
+                    <ReorderButtons index={idx} total={(data.skills ?? []).length} onMove={moveSkill} />
                     <Input value={skill.name} onChange={(e) => updateSkill(skill.id, e.target.value)} placeholder="Nome da habilidade" />
                     <RemoveButton onClick={() => removeSkill(skill.id)} />
                   </div>
@@ -792,9 +842,10 @@ export default function ResumeForm({ data, onChange }) {
             <div className="pt-1">
               <Label>Prêmios e Conquistas</Label>
               <div className="flex flex-col gap-2 mt-1">
-                {(data.awards ?? []).map((award) => (
+                {(data.awards ?? []).map((award, idx) => (
                   <Card key={award.id}>
                     <div className="flex items-start gap-2">
+                      <ReorderButtons index={idx} total={(data.awards ?? []).length} onMove={moveAward} />
                       <div className="flex-1 flex flex-col gap-2">
                         <div>
                           <Label>Nome do Prêmio</Label>
@@ -823,8 +874,9 @@ export default function ResumeForm({ data, onChange }) {
             <div className="pt-1">
               <Label>Habilidades</Label>
               <div className="flex flex-col gap-2 mt-1">
-                {(data.skills ?? []).map((skill) => (
+                {(data.skills ?? []).map((skill, idx) => (
                   <div key={skill.id} className="flex items-center gap-2">
+                    <ReorderButtons index={idx} total={(data.skills ?? []).length} onMove={moveSkill} />
                     <Input value={skill.name} onChange={(e) => updateSkill(skill.id, e.target.value)} placeholder="Nome da habilidade" />
                     <RemoveButton onClick={() => removeSkill(skill.id)} />
                   </div>
@@ -839,9 +891,10 @@ export default function ResumeForm({ data, onChange }) {
             <div className="pt-1">
               <Label>Referências</Label>
               <div className="flex flex-col gap-2 mt-1">
-                {(data.references ?? []).map((ref) => (
+                {(data.references ?? []).map((ref, idx) => (
                   <Card key={ref.id}>
                     <div className="flex items-start gap-2">
+                      <ReorderButtons index={idx} total={(data.references ?? []).length} onMove={moveReference} />
                       <div className="flex-1 flex flex-col gap-2">
                         <div>
                           <Label>Nome</Label>
