@@ -5,7 +5,7 @@ import { Icon } from '../components/Icon';
 import { Empty, Modal, Segmented, Thumb, useToast, useWidth } from '../components/ui';
 import { useStore } from '../store';
 import { TEMPLATES, matchesTag, type TemplateDef } from '../templates';
-import { sampleResume } from '../../shared/sample.mjs';
+import { fillWithSample, sampleResume } from '../../shared/sample.mjs';
 import { normalizeResume } from '../../shared/model.mjs';
 import type { Resume } from '../types';
 
@@ -28,7 +28,7 @@ export function TemplatesPage({ applyTo }: { applyTo?: string }) {
   const [open, setOpen] = useState<TemplateDef | null>(null);
   const target = applyTo ? resumes.find((r) => r.id === applyTo) : undefined;
   // Prévia com os dados do currículo em edição (ou o exemplo)
-  const demo = useMemo(() => (target || normalizeResume(sampleResume())) as Resume, [target]);
+  const demo = useMemo(() => (target ? fillWithSample(target) : normalizeResume(sampleResume())) as Resume, [target]);
   const list = TEMPLATES.filter((t) => filter === 'todos' || matchesTag(t, filter));
   const [ref, w] = useWidth<HTMLDivElement>();
   const cols = Math.max(1, Math.floor((w + 22) / (210 + 22)));
@@ -86,7 +86,7 @@ export function TemplatesPage({ applyTo }: { applyTo?: string }) {
               <div><div className="lbl">Foto</div>{open.photo === 'yes' ? 'Tem espaço para foto (opcional: sem foto o layout se ajusta).' : 'Sem foto.'}</div>
               <div><div className="lbl">Cores sugeridas</div><div className="swatches" style={{ marginTop: 6 }}>{(open.palette || [open.accent]).map((c) => <span key={c} className="sw" style={{ background: c, width: 22, height: 22 }} />)}</div></div>
               {open.refs.length ? <div><div className="lbl">Inspirado em</div>{open.refs.join(', ')} (pasta modelos)</div> : null}
-              <div className="hint">A prévia usa {target ? 'os dados do seu currículo' : 'um currículo de exemplo'}. Cores, fontes e espaçamentos podem ser ajustados no editor.</div>
+              <div className="hint">A prévia usa {target ? 'os dados do seu currículo (o que falta vem de um exemplo)' : 'um currículo de exemplo'}. Cores, fontes e espaçamentos podem ser ajustados no editor.</div>
             </div>
           </div>
         </Modal>

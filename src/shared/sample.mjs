@@ -20,6 +20,23 @@ export const SAMPLE_PHOTO = `data:image/svg+xml;base64,${typeof btoa === 'functi
 const it = (o) => ({ id: uid(), role: '', org: '', location: '', start: '', end: '', current: false, description: '', ...o });
 const lv = (name, level) => ({ id: uid(), name, level });
 
+const filled = (s) => !s.hidden && (s.type === 'summary' ? !!s.text.trim() : s.items.some((i) => (i.name || i.role || i.org || i.description || '').trim()));
+
+/**
+ * Para miniaturas de modelos: mantém o que a pessoa já preencheu e completa o resto com o exemplo,
+ * para nenhum modelo aparecer em branco. Estilo (cores, fontes, idioma) continua o do currículo.
+ */
+export function fillWithSample(r) {
+  const s = sampleResume();
+  const profile = { ...r.profile };
+  for (const k of ['name', 'title', 'email', 'phone', 'location', 'website', 'linkedin']) if (!String(profile[k] || '').trim()) profile[k] = s.profile[k];
+  if (!profile.photo) { profile.photo = s.profile.photo; profile.photoPos = s.profile.photoPos; }
+  const mine = r.sections.filter(filled);
+  const types = new Set(mine.map((x) => x.type));
+  const sections = [...mine, ...s.sections.filter((x) => !types.has(x.type))];
+  return { ...r, profile, sections };
+}
+
 export function sampleResume({ withPhoto = true, template = 'ipanema' } = {}) {
   const now = Date.now();
   return {

@@ -1,7 +1,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createResume, normalizeResume, duplicateResume, parseDescription, safeFileName, exportFileName, sectionTitle, newSection } from '../src/shared/model.mjs';
-import { sampleResume } from '../src/shared/sample.mjs';
+import { sampleResume, fillWithSample } from '../src/shared/sample.mjs';
+
+test('miniaturas: mantém o que foi preenchido e completa o resto com o exemplo', () => {
+  const r = createResume({ name: 'Luis' });
+  r.sections.find((s) => s.type === 'skills').items[0].name = 'Excel';
+  const f = fillWithSample(r);
+  assert.equal(f.profile.name, 'Luis');
+  assert.ok(f.profile.title && f.profile.email, 'cargo e e-mail vêm do exemplo');
+  assert.deepEqual(f.sections.find((s) => s.type === 'skills').items.map((i) => i.name), ['Excel'], 'seção preenchida não é trocada');
+  assert.ok(f.sections.find((s) => s.type === 'experience').items.length >= 2, 'experiência vazia vem do exemplo');
+  assert.equal(r.profile.title, '', 'o currículo original não muda');
+});
 
 test('currículo novo tem as seções básicas e o nome', () => {
   const r = createResume({ name: 'Ana Souza' });
