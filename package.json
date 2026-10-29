@@ -1,7 +1,7 @@
 {
   "name": "curriculodobrasil",
   "productName": "CurriculoDoBrasil",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Crie e edite currículos bonitos com dezenas de modelos e exporte PDF com texto real, pronto para os sistemas de RH (ATS).",
   "main": "src/main/main.js",
   "author": {
