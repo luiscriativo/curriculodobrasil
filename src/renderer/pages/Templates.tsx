@@ -41,7 +41,7 @@ export function TemplatesPage({ applyTo }: { applyTo?: string }) {
         nav({ name: 'editor', id: target.id });
         toast.show({ kind: 'success', title: `Modelo ${t.name} aplicado` });
       } else {
-        const r = await create({ template: t.id });
+        const r = await create({ template: t.id, sample: true });
         nav({ name: 'editor', id: r.id });
       }
     } catch (e) {

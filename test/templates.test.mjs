@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const dir = path.resolve(import.meta.dirname, '../src/renderer/templates');
-const src = ['set-a', 'set-b', 'set-c', 'set-d'].map((f) => fs.readFileSync(path.join(dir, `${f}.tsx`), 'utf8').replace(/\r\n/g, '\n')).join('\n');
+const src = ['set-a', 'set-b', 'set-c', 'set-d', 'set-e'].map((f) => fs.readFileSync(path.join(dir, `${f}.tsx`), 'utf8').replace(/\r\n/g, '\n')).join('\n');
 const ids = [...src.matchAll(/^ {4}id: '([a-z-]+)'/gm)].map((m) => m[1]);
 const refs = [...src.matchAll(/refs: \[([^\]]*)\]/g)].flatMap((m) => [...m[1].matchAll(/'(modelo-\d+)'/g)].map((x) => x[1]));
 
@@ -16,8 +16,8 @@ test('ids únicos e mais de 50 modelos', () => {
   assert.ok(ids.includes('ats'), 'existe a versão ATS');
 });
 
-test('todas as 63 imagens de referência têm um modelo', () => {
-  const expected = Array.from({ length: 63 }, (_, i) => `modelo-${String(i + 1).padStart(2, '0')}`);
+test('todas as 66 imagens de referência têm um modelo', () => {
+  const expected = Array.from({ length: 66 }, (_, i) => `modelo-${String(i + 1).padStart(2, '0')}`);
   assert.deepEqual(expected.filter((m) => !refs.includes(m)), []);
 });
 

@@ -7,7 +7,7 @@ import { FONT_PAIRS, FONTS } from '../../templates/engine';
 import { getTemplate } from '../../templates';
 import { formatDate } from '../../../shared/dates.mjs';
 
-const EXTRA_COLORS = ['#111111', '#1f3a5f', '#2563eb', '#0f766e', '#15803d', '#b45309', '#c2410c', '#b91c1c', '#be185d', '#7c3aed', '#8a6f5e', '#64748b'];
+export const EXTRA_COLORS = ['#111111', '#1f3a5f', '#2563eb', '#0f766e', '#15803d', '#b45309', '#c2410c', '#b91c1c', '#be185d', '#7c3aed', '#8a6f5e', '#64748b'];
 
 export function StylePanel({ doc, update, pages, onFit }: { doc: Resume; update: Update; pages: number; onFit: () => void }) {
   const st = doc.style;

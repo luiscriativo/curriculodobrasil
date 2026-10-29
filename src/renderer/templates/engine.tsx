@@ -91,6 +91,8 @@ export class Ctx {
   lang: 'pt' | 'en' | 'es';
   tpl: TemplateDef;
   private used = new Set<string>();
+  /** Seções que o modelo pôs na coluna lateral (o editor mostra em qual coluna cada uma está) */
+  readonly asideIds = new Set<string>();
   readonly all: Section[];
   /** Prévia do editor: mostra também o que está vazio, com indicações clicáveis */
   readonly editing: boolean;
@@ -124,7 +126,9 @@ export class Ctx {
     const rest = this.all.filter((s) => !this.used.has(s.id));
     rest.forEach((s) => this.used.add(s.id));
     const isAside = (s: Section) => (s.placement === 'aside' ? true : s.placement === 'main' ? false : aside.includes(s.type));
-    return { main: rest.filter((s) => !isAside(s)), aside: rest.filter(isAside) };
+    const side = rest.filter(isAside);
+    side.forEach((s) => this.asideIds.add(s.id));
+    return { main: rest.filter((s) => !isAside(s)), aside: side };
   }
   rest(): Section[] { return this.split([]).main; }
 
@@ -139,6 +143,11 @@ export class Ctx {
   get first() { const w = this.p.name.trim().split(/\s+/); return w.length > 1 ? w.slice(0, -1).join(' ') : w[0] || ''; }
   get last() { const w = this.p.name.trim().split(/\s+/); return w.length > 1 ? w[w.length - 1] : ''; }
 }
+
+/** Marcas da prévia do editor: dizem à barra de contexto o que foi clicado (fora do editor, nada). */
+const secAt = (c: Ctx, s: Section) => (c.editing ? { 'data-sec': s.id } : {});
+const itemAt = (c: Ctx, s: Section, it: Item) => (c.editing ? { 'data-item': `${s.id}/${it.id}` } : {});
+const ctxAt = (c: Ctx, kind: 'contacts' | 'photo') => (c.editing ? { 'data-ctx': kind } : {});
 
 const hasContent = (it: Item) => !!(it.name?.trim() || it.role?.trim() || it.org?.trim() || it.description?.trim());
 
@@ -166,12 +175,12 @@ export function sheetVars(r: Resume, tpl: TemplateDef): CSSProperties {
 export function Name({ c, split, tag = 'h1', className = '' }: { c: Ctx; split?: boolean; tag?: 'h1' | 'div'; className?: string }) {
   const T = tag;
   const display = split && c.last ? <><span className="nm-first">{c.first}</span>{' '}<span className="nm-last">{c.last}</span></> : c.p.name;
-  if (c.editing) return <T className={`nm ${className}`}><E editing path="profile.name" value={c.p.name} ph="Seu nome completo" display={display} /></T>;
+  if (c.editing) return <T className={`nm ${className}`} data-ctx="profile"><E editing path="profile.name" value={c.p.name} ph="Seu nome completo" display={display} /></T>;
   return <T className={`nm ${className}`}>{c.p.name ? display : ' '}</T>;
 }
 
 export function JobTitle({ c, className = '' }: { c: Ctx; className?: string }) {
-  if (c.editing) return <div className={`jt ${className}`}><E editing path="profile.title" value={c.p.title} ph="Cargo ou objetivo" /></div>;
+  if (c.editing) return <div className={`jt ${className}`} data-ctx="profile"><E editing path="profile.title" value={c.p.title} ph="Cargo ou objetivo" /></div>;
   return c.p.title ? <div className={`jt ${className}`}>{c.p.title}</div> : null;
 }
 
@@ -215,10 +224,10 @@ export function Contacts({ c, variant = 'icons', className = '', keys, sep = ' �
     ? <E editing path={x.path} value={x.value} ph={CONTACT_PH[x.key] || x.label} />
     : x.href ? <a href={x.href}>{x.value}</a> : x.value);
   if (variant === 'inline') {
-    return <div className={`ct ct-inline ${className}`}>{list.map((x, i) => <Fragment key={x.key}>{i > 0 && <span className="ct-sep">{sep}</span>}<span className="ct-v">{val(x)}</span></Fragment>)}</div>;
+    return <div className={`ct ct-inline ${className}`} {...ctxAt(c, 'contacts')}>{list.map((x, i) => <Fragment key={x.key}>{i > 0 && <span className="ct-sep">{sep}</span>}<span className="ct-v">{val(x)}</span></Fragment>)}</div>;
   }
   return (
-    <ul className={`ct ct-${variant} ${className}`}>
+    <ul className={`ct ct-${variant} ${className}`} {...ctxAt(c, 'contacts')}>
       {list.map((x) => (
         <li key={x.key}>
           {variant === 'icons' || variant === 'iconsInline' ? <span className="ct-ic"><Icon name={x.icon} size="1em" stroke={2} /></span> : null}
@@ -236,7 +245,7 @@ export function Photo({ c, className = '', shape }: { c: Ctx; className?: string
   const sh = c.r.style.photoShape || shape || 'circle';
   if (!c.p.photo) return c.hasPhoto ? <PhotoSlot className={`ph ph-${sh} ${className}`} /> : null;
   return (
-    <div className={`ph ph-${sh} ${c.r.style.grayscale ? 'ph-gray' : ''} ${className}`}>
+    <div className={`ph ph-${sh} ${c.r.style.grayscale ? 'ph-gray' : ''} ${className}`} {...ctxAt(c, 'photo')}>
       <img src={c.p.photo} alt="" />
     </div>
   );
@@ -288,13 +297,14 @@ export function Entry({ c, it, o, s }: { c: Ctx; it: Item; o: Opts; s?: Section 
       ph={s?.type === 'experience' ? 'Descreva o que você fez e os resultados. Comece a linha com “- ” para criar tópicos.' : 'Detalhes (opcional)'} />
     : <Desc text={it.description} />;
   const head = o.orgFirst ? <>{sub}{title}</> : <>{title}{sub}</>;
+  const at = ed ? itemAt(c, s!, it) : {};
   if (v === 'left' || v === 'right') {
-    return <div className={`en en-${v}`}>{v === 'left' ? d || <div className="en-d" /> : null}<div className="en-b">{head}{desc}</div>{v === 'right' ? d : null}</div>;
+    return <div className={`en en-${v}`} {...at}>{v === 'left' ? d || <div className="en-d" /> : null}<div className="en-b">{head}{desc}</div>{v === 'right' ? d : null}</div>;
   }
-  if (v === 'top') return <div className="en en-top">{d}{head}{desc}</div>;
+  if (v === 'top') return <div className="en en-top" {...at}>{d}{head}{desc}</div>;
   if (v === 'sub' || v === 'timeline') {
     return (
-      <div className={`en en-${v}`}>
+      <div className={`en en-${v}`} {...at}>
         {o.orgFirst ? sub : title}
         <div className="en-meta">{o.orgFirst ? title : sub}{d}</div>
         {desc}
@@ -303,7 +313,7 @@ export function Entry({ c, it, o, s }: { c: Ctx; it: Item; o: Opts; s?: Section 
   }
   // stack: título e data na mesma linha
   return (
-    <div className="en en-stack">
+    <div className="en en-stack" {...at}>
       <div className="en-h">{o.orgFirst ? sub : title}{d}</div>
       {o.orgFirst ? title : sub}
       {desc}
@@ -317,16 +327,17 @@ export function Levels({ c, s, variant = 'bars' }: { c: Ctx; s: Section; variant
   const nm = (i: Item) => (c.editing ? <E editing path={`item.${s.id}.${i.id}.name`} value={i.name} ph={ph} /> : i.name);
   let v = variant;
   if (!c.r.style.showLevels && ['bars', 'dots', 'circles', 'segments', 'list'].includes(v)) v = 'bullets';
-  if (v === 'plain') return <p className="lv-plain">{c.editing ? items.map((i, k) => <Fragment key={i.id}>{k ? ' · ' : ''}{nm(i)}</Fragment>) : items.map((i) => i.name).join(' · ')}</p>;
-  if (v === 'tags') return <ul className="lv lv-tags">{items.map((i) => <li key={i.id}>{nm(i)}</li>)}</ul>;
-  if (v === 'checks') return <ul className="lv lv-checks">{items.map((i) => <li key={i.id}><Icon name="check" size="1em" stroke={2.4} /><span>{nm(i)}</span></li>)}</ul>;
-  if (v === 'bullets' || v === 'columns') return <ul className={`lv lv-${v}`}>{items.map((i) => <li key={i.id}>{nm(i)}</li>)}</ul>;
+  const sa = secAt(c, s);
+  if (v === 'plain') return <p className="lv-plain" {...sa}>{c.editing ? items.map((i, k) => <Fragment key={i.id}>{k ? ' · ' : ''}<span {...itemAt(c, s, i)}>{nm(i)}</span></Fragment>) : items.map((i) => i.name).join(' · ')}</p>;
+  if (v === 'tags') return <ul className="lv lv-tags" {...sa}>{items.map((i) => <li key={i.id} {...itemAt(c, s, i)}>{nm(i)}</li>)}</ul>;
+  if (v === 'checks') return <ul className="lv lv-checks" {...sa}>{items.map((i) => <li key={i.id} {...itemAt(c, s, i)}><Icon name="check" size="1em" stroke={2.4} /><span>{nm(i)}</span></li>)}</ul>;
+  if (v === 'bullets' || v === 'columns') return <ul className={`lv lv-${v}`} {...sa}>{items.map((i) => <li key={i.id} {...itemAt(c, s, i)}>{nm(i)}</li>)}</ul>;
   return (
-    <ul className={`lv lv-${v}`}>
+    <ul className={`lv lv-${v}`} {...sa}>
       {items.map((i) => {
         const pct = Math.max(0, Math.min(5, i.level)) * 20;
         return (
-          <li key={i.id} style={{ '--lv': `${pct}%` } as CSSProperties}>
+          <li key={i.id} style={{ '--lv': `${pct}%` } as CSSProperties} {...itemAt(c, s, i)}>
             {v === 'circles' ? <svg className="lv-ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.5" className="tr" /><circle cx="18" cy="18" r="15.5" className="fl" strokeDasharray={`${(pct / 100) * 97.4} 97.4`} /></svg> : null}
             <span className="lv-n">{nm(i)}</span>
             {v === 'bars' ? <span className="lv-bar" aria-hidden><i /></span> : null}
@@ -353,17 +364,19 @@ export function SectionBody({ c, s, o = {} }: { c: Ctx; s: Section; o?: Opts }) 
     const items = c.editing ? s.items : s.items.filter((i) => i.name?.trim());
     const nm = (i: Item) => (c.editing ? <E editing path={`item.${s.id}.${i.id}.name`} value={i.name} ph="Interesse" /> : i.name);
     const v = o.interests || 'tags';
-    if (v === 'plain') return <p className="lv-plain">{c.editing ? items.map((i, k) => <Fragment key={i.id}>{k ? ' · ' : ''}{nm(i)}</Fragment>) : items.map((i) => i.name).join(' · ')}</p>;
-    if (v === 'icons') return <ul className="lv lv-icons">{items.map((i) => <li key={i.id}><Icon name={interestIcon(i.name)} size="1.5em" stroke={1.6} /><span>{nm(i)}</span></li>)}</ul>;
-    return <ul className={`lv lv-${v}`}>{items.map((i) => <li key={i.id}>{nm(i)}</li>)}</ul>;
+    const sa = secAt(c, s);
+    if (v === 'plain') return <p className="lv-plain" {...sa}>{c.editing ? items.map((i, k) => <Fragment key={i.id}>{k ? ' · ' : ''}<span {...itemAt(c, s, i)}>{nm(i)}</span></Fragment>) : items.map((i) => i.name).join(' · ')}</p>;
+    if (v === 'icons') return <ul className="lv lv-icons" {...sa}>{items.map((i) => <li key={i.id} {...itemAt(c, s, i)}><Icon name={interestIcon(i.name)} size="1.5em" stroke={1.6} /><span>{nm(i)}</span></li>)}</ul>;
+    return <ul className={`lv lv-${v}`} {...sa}>{items.map((i) => <li key={i.id} {...itemAt(c, s, i)}>{nm(i)}</li>)}</ul>;
   }
-  return <div className="ens">{c.items(s).map((it) => <Entry key={it.id} c={c} it={it} o={o} s={s} />)}</div>;
+  return <div className="ens" {...secAt(c, s)}>{c.items(s).map((it) => <Entry key={it.id} c={c} it={it} o={o} s={s} />)}</div>;
 }
 
-export function Sec({ c, s, o = {}, className = '', title }: { c: Ctx; s: Section; o?: Opts; className?: string; title?: ReactNode }) {
+/** flow = vem de Secs (segue a ordem do usuário); seções que o modelo fixa num lugar não têm. */
+export function Sec({ c, s, o = {}, className = '', title, flow }: { c: Ctx; s: Section; o?: Opts; className?: string; title?: ReactNode; flow?: boolean }) {
   const icon = (SECTION_TYPES as Record<string, { icon: string }>)[s.type].icon;
   return (
-    <section className={`sec sec-${s.type} ${className}`}>
+    <section className={`sec sec-${s.type} ${className}`} {...secAt(c, s)} {...(c.editing && flow ? { 'data-flow': '', 'data-col': c.asideIds.has(s.id) ? 'aside' : 'main' } : {})}>
       <h2 className="sec-t">
         {o.icons ? <span className="sec-ic"><Icon name={icon} size="1em" stroke={2} /></span> : null}
         <span className="sec-tx">{title ?? (c.editing ? <E editing path={`sec.${s.id}.title`} value={c.title(s)} ph="Título da seção" /> : c.title(s))}</span>
@@ -374,14 +387,14 @@ export function Sec({ c, s, o = {}, className = '', title }: { c: Ctx; s: Sectio
 }
 
 export function Secs({ c, list, o = {}, className = '' }: { c: Ctx; list: Section[]; o?: Opts; className?: string }) {
-  return <>{list.map((s) => <Sec key={s.id} c={c} s={s} o={o} className={className} />)}</>;
+  return <>{list.map((s) => <Sec key={s.id} c={c} s={s} o={o} className={className} flow />)}</>;
 }
 
 /** Seção "Contato" montada a partir dos dados pessoais. */
 export function ContactSec({ c, variant = 'icons', o = {}, className = '' }: { c: Ctx; variant?: Parameters<typeof Contacts>[0]['variant']; o?: Opts; className?: string }) {
   if (!contactList(c).length) return null;
   return (
-    <section className={`sec sec-contact ${className}`}>
+    <section className={`sec sec-contact ${className}`} {...ctxAt(c, 'contacts')}>
       <h2 className="sec-t">{o.icons ? <span className="sec-ic"><Icon name="phone" size="1em" stroke={2} /></span> : null}<span className="sec-tx">{c.label('contact')}</span></h2>
       <Contacts c={c} variant={variant} />
     </section>
@@ -393,7 +406,7 @@ export function SummaryText({ c, s, className = '' }: { c: Ctx; s?: Section; cla
   if (!s) return null;
   const paras = s.text.split(/\n+/).filter(Boolean).map((t, i) => <p key={i}>{t}</p>);
   if (c.editing) {
-    return <div className={`sum ${className}`}><E editing block multiline path={`sec.${s.id}.text`} value={s.text} display={paras} ph="Escreva 3 a 5 linhas sobre você: experiência, especialidades e resultados." /></div>;
+    return <div className={`sum ${className}`} {...secAt(c, s)}><E editing block multiline path={`sec.${s.id}.text`} value={s.text} display={paras} ph="Escreva 3 a 5 linhas sobre você: experiência, especialidades e resultados." /></div>;
   }
   return <div className={`sum ${className}`}>{paras}</div>;
 }

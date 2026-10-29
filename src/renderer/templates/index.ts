@@ -4,8 +4,9 @@ import { setA } from './set-a';
 import { setB } from './set-b';
 import { setC } from './set-c';
 import { setD } from './set-d';
+import { setE } from './set-e';
 
-export const TEMPLATES: TemplateDef[] = [...setA, ...setB, ...setC, ...setD];
+export const TEMPLATES: TemplateDef[] = [...setA, ...setB, ...setC, ...setD, ...setE];
 const BY_ID = new Map(TEMPLATES.map((t) => [t.id, t]));
 
 export function getTemplate(id: string | null | undefined): TemplateDef {

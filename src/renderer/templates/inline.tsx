@@ -7,10 +7,12 @@ import { sectionTitle } from '../../shared/model.mjs';
 export interface EditApi {
   /** Grava o texto digitado no caminho (ex.: "profile.name", "item.<seção>.<item>.role"). */
   edit: (path: string, value: string) => void;
-  /** Leva o painel da esquerda até o campo; soft = sem tirar o foco do currículo. */
+  /** Seleciona o que contém o campo (a barra de contexto mostra as ações); soft = só seleciona, sem abrir ajustes. */
   focus: (path: string, soft?: boolean) => void;
   /** Escolher (ou usar a imagem solta) como foto do currículo */
   pickPhoto: (file?: File) => void;
+  /** Enter num campo de uma linha: segue para o próximo campo (ou cria o próximo item da lista). */
+  next: (path: string) => void;
 }
 export const EditCtx = createContext<EditApi | null>(null);
 
@@ -73,7 +75,7 @@ export function E({ editing, path, value, ph, multiline, block, display }: {
   if (!editing || !api) return <>{value ? (display ?? value) : null}</>;
   if (!on) {
     return (
-      <Tag key="show" className={`ie ${value ? '' : 'ie-empty'}`} data-ph={ph} tabIndex={0} role="button" title="Clique para editar"
+      <Tag key="show" className={`ie ${value ? '' : 'ie-empty'}`} data-ph={ph} data-path={path} tabIndex={0} role="button" title="Clique para editar"
         onMouseDown={(e) => { e.preventDefault(); setOn(true); api.focus(path, true); }}
         onFocus={() => { setOn(true); api.focus(path, true); }}>
         {value ? (display ?? value) : null}
@@ -82,10 +84,11 @@ export function E({ editing, path, value, ph, multiline, block, display }: {
   }
   return (
     // key diferente: o campo editável (texto mexido à mão) não é reaproveitado para o visual
-    <Tag key="edit" ref={ref as never} className="ie ie-on" contentEditable="plaintext-only" suppressContentEditableWarning spellCheck data-ph={ph}
+    <Tag key="edit" ref={ref as never} className="ie ie-on" contentEditable="plaintext-only" suppressContentEditableWarning spellCheck data-ph={ph} data-path={path}
       onInput={(e) => { const v = readText(e.currentTarget); sent.current = v; api.edit(path, v); e.currentTarget.classList.toggle('ie-blank', !v); }}
       onKeyDown={(e) => {
         if (e.key === 'Escape' || (e.key === 'Enter' && !multiline)) { e.preventDefault(); e.currentTarget.blur(); }
+        if (e.key === 'Enter' && !multiline) api.next(path);
         // Atalhos do app (Ctrl+Z, Ctrl+E…) continuam valendo; o resto fica só no campo
         if (!e.ctrlKey && !e.metaKey) e.stopPropagation();
       }}
@@ -99,7 +102,7 @@ export function PhotoSlot({ className }: { className: string }) {
   const [over, setOver] = useState(false);
   if (!api) return null;
   return (
-    <div className={`${className} ph-slot ${over ? 'ph-over' : ''}`} role="button" tabIndex={0} title="Adicionar foto" data-own-drop
+    <div className={`${className} ph-slot ${over ? 'ph-over' : ''}`} role="button" tabIndex={0} title="Adicionar foto" data-own-drop data-ctx="photo"
       onMouseDown={(e) => { e.preventDefault(); api.pickPhoto(); }} onKeyDown={(e) => { if (e.key === 'Enter') api.pickPhoto(); }}
       onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
       onDrop={(e) => { e.preventDefault(); setOver(false); const f = e.dataTransfer.files[0]; if (f) api.pickPhoto(f); }}>
@@ -111,12 +114,12 @@ export function PhotoSlot({ className }: { className: string }) {
   );
 }
 
-/** Algo que não dá para editar no lugar (período, nível): clique leva ao campo no painel. */
+/** Algo que não dá para editar no lugar (período): clique abre o ajuste na barra de contexto. */
 export function PanelLink({ editing, path, children, className = '', ph }: { editing: boolean; path: string; children: ReactNode; className?: string; ph?: string }) {
   const api = useContext(EditCtx);
   if (!editing || !api) return <>{children}</>;
   return (
-    <span className={`ie-link ${className} ${children ? '' : 'ie-empty'}`} data-ph={ph} role="button" tabIndex={0} title="Editar no painel"
+    <span className={`ie-link ${className} ${children ? '' : 'ie-empty'}`} data-ph={ph} data-path={path} role="button" tabIndex={0} title="Clique para editar"
       onMouseDown={(e) => { e.preventDefault(); api.focus(path); }} onKeyDown={(e) => { if (e.key === 'Enter') api.focus(path); }}>
       {children}
     </span>

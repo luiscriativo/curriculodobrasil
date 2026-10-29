@@ -1,4 +1,5 @@
-// Editor: formulário à esquerda, prévia ao vivo (ou o PDF final) à direita. Salva sozinho.
+// Editor: o currículo é editado direto na prévia, com uma barra de contexto flutuando à esquerda;
+// modelo, estilo e análise ficam num painel à direita que dá para recolher. Salva sozinho.
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { TopBar } from '../App';
@@ -9,7 +10,7 @@ import { useStore } from '../store';
 import type { Resume } from '../types';
 import { Sheet } from '../templates/Sheet';
 import { getTemplate } from '../templates';
-import { ContentPanel } from './editor/ContentPanel';
+import { ContextDock, ITEM_NAMES, useSelOps, type Sel } from './editor/ContextDock';
 import { StylePanel } from './editor/StylePanel';
 import { TemplatePanel } from './editor/TemplatePanel';
 import { AtsPanel } from './editor/AtsPanel';
@@ -17,8 +18,11 @@ import { timeAgo } from '../../shared/dates.mjs';
 import { EditCtx, applyEdit, type EditApi } from '../templates/inline';
 import { loadPhoto } from '../lib/photo';
 
-type Tab = 'content' | 'template' | 'style' | 'ats';
+type Tab = 'template' | 'style' | 'ats';
 const MM = 96 / 25.4;
+const DOCK_W = 76; // espaço da barra de contexto à esquerda da folha
+const PANEL_KEY = 'editor.panel';
+const readPanel = () => { try { return localStorage.getItem(PANEL_KEY) !== 'off'; } catch { return true; } };
 // Área útil por página no PDF: a 1ª página perde só a margem de baixo; as demais, cima e baixo (ver PrintView)
 const PDF_MARGIN_MM = 11;
 
@@ -36,6 +40,37 @@ function contentHeight(cv: HTMLElement) {
   return max ? (max - box.top) / k : 0;
 }
 
+/** Contorno do que está selecionado na prévia (as marcas data-* vêm do motor dos modelos). */
+function selCss(sel: Sel) {
+  const q = sel.kind === 'item' ? `[data-item="${sel.sec}/${sel.item}"]`
+    : sel.kind === 'sec' ? `[data-sec="${sel.sec}"]:not([data-sec="${sel.sec}"] *)`
+    : sel.kind === 'contacts' || sel.kind === 'photo' ? `[data-ctx="${sel.kind}"]` : '';
+  return q ? `.cv-editing ${q} { outline: 2px solid rgba(240, 18, 127, .7); outline-offset: 3px; border-radius: 2px; }` : '';
+}
+
+/** "+ Adicionar …" na borda de baixo do item ou da seção selecionada: o próximo passo mais comum, no lugar onde ele acontece. */
+function AddChip({ sheet, sel, doc, onAdd }: { sheet: React.RefObject<HTMLDivElement | null>; sel: Sel; doc: Resume; onAdd: () => void }) {
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const s = sel.kind === 'sec' || sel.kind === 'item' ? doc.sections.find((x) => x.id === sel.sec) : undefined;
+  const q = !s || s.type === 'summary' ? '' : sel.kind === 'item' ? `[data-item="${sel.sec}/${sel.item}"]` : `[data-sec="${s.id}"]:not([data-sec="${s.id}"] *)`;
+  useLayoutEffect(() => {
+    const root = sheet.current;
+    const el = q && root ? root.querySelector<HTMLElement>(q) : null;
+    if (!root || !el) { if (pos) setPos(null); return; }
+    const a = root.getBoundingClientRect(), r = el.getBoundingClientRect();
+    const n = { x: Math.round(r.left - a.left + r.width / 2), y: Math.round(r.bottom - a.top + 3) };
+    if (!pos || pos.x !== n.x || pos.y !== n.y) setPos(n);
+  });
+  if (!pos || !s) return null;
+  const what = (ITEM_NAMES[s.type] || 'item').toLowerCase();
+  return (
+    <button className="pv-add" style={{ left: pos.x, top: pos.y }} onMouseDown={(e) => e.stopPropagation()} onClick={onAdd}
+      title={sel.kind === 'item' ? 'Adiciona logo abaixo deste (Enter no último campo também)' : undefined}>
+      <Icon name="plus" size={14} />Adicionar {what}
+    </button>
+  );
+}
+
 export type Update = (fn: (r: Resume) => Resume, opts?: { coalesce?: string }) => void;
 
 export function Editor({ id, initialTab }: { id: string; initialTab?: string }) {
@@ -43,10 +78,21 @@ export function Editor({ id, initialTab }: { id: string; initialTab?: string }) 
   const toast = useToast();
   const initial = resumes.find((r) => r.id === id);
   const [doc, setDoc] = useState<Resume | null>(initial || null);
-  const [tab, setTab] = useState<Tab>((initialTab as Tab) || 'content');
+  const [tab, setTab] = useState<Tab>(initialTab === 'style' || initialTab === 'ats' ? initialTab : 'template');
+  const [panel, setPanelRaw] = useState(() => (initialTab && initialTab !== 'content' ? true : readPanel()));
+  const setPanel = useCallback((v: boolean | ((o: boolean) => boolean)) => setPanelRaw((o) => {
+    const n = typeof v === 'function' ? v(o) : v;
+    try { localStorage.setItem(PANEL_KEY, n ? 'on' : 'off'); } catch { /* sem armazenamento: só não lembra */ }
+    return n;
+  }), []);
+  const openPanel = useCallback((t: Tab) => { setTab(t); setPanel(true); }, [setPanel]);
   const [saveState, setSaveState] = useState<'saved' | 'saving' | 'error'>('saved');
   const [savedAt, setSavedAt] = useState<number>(initial?.updatedAt || Date.now());
-  const [focusTarget, setFocusTarget] = useState<string | null>(null);
+  // O que está selecionado no currículo (a barra de contexto mostra as ações) e o ajuste aberto nela
+  const [sel, setSel] = useState<Sel>({ kind: 'doc' });
+  const [pop, setPop] = useState<string | null>(null);
+  const [crumbSlot, setCrumbSlot] = useState<HTMLElement | null>(null);
+  const select = useCallback((s: Sel, p: string | null = null) => { setSel(s); setPop(p); }, []);
   const hist = useRef<{ past: Resume[]; future: Resume[]; lastKey: string; lastAt: number }>({ past: [], future: [], lastKey: '', lastAt: 0 });
   const saveTimer = useRef<number>(0);
   const docRef = useRef(doc);
@@ -109,7 +155,9 @@ export function Editor({ id, initialTab }: { id: string; initialTab?: string }) 
     try {
       const data = await loadPhoto(file);
       update((r) => ({ ...r, profile: { ...r.profile, photo: data, photoPos: { x: 50, y: 50, zoom: 1 } } }));
-      toast.show({ kind: 'success', title: 'Foto adicionada', text: 'Ajuste o enquadramento em Conteúdo → Dados pessoais.', timeout: 3500 });
+      setSel({ kind: 'photo' });
+      setPop(null);
+      toast.show({ kind: 'success', title: 'Foto adicionada', text: 'Para enquadrar, use a barra à esquerda.', timeout: 3500 });
     } catch (e) {
       toast.show({ kind: 'error', title: 'Não foi possível usar a foto', text: (e as Error).message });
     }
@@ -117,9 +165,79 @@ export function Editor({ id, initialTab }: { id: string; initialTab?: string }) 
 
   const editApi = useMemo<EditApi>(() => ({
     edit: (path, value) => update((r) => applyEdit(r, path, value), { coalesce: path }),
-    focus: (path, soft) => { setTab('content'); setFocusTarget(soft ? `${path}|soft` : path); },
+    focus: (path, soft) => {
+      const [kind, a, b, c] = path.split('.');
+      if (kind === 'profile') select({ kind: a === 'name' || a === 'title' ? 'profile' : 'contacts' });
+      else if (kind === 'sec') select({ kind: 'sec', sec: a });
+      else if (kind === 'item') select({ kind: 'item', sec: a, item: b }, !soft && (c === 'start' || c === 'end') ? 'period' : null);
+    },
     pickPhoto: (file) => { if (file) usePhoto(file); else photoInput.current?.click(); },
-  }), [update, usePhoto]);
+    next: (path) => {
+      // Enter: próximo campo do mesmo item (ou do cabeçalho); no fim de uma lista de habilidades, idiomas… cria o próximo
+      const root = sheetRef.current;
+      const el = root?.querySelector<HTMLElement>(`[data-path="${CSS.escape(path)}"]`);
+      if (!root || !el) return;
+      const [kind, a, b] = path.split('.');
+      const box = kind === 'item' ? el.closest('[data-item]') : root;
+      const fields = [...(box || root).querySelectorAll<HTMLElement>('.ie[data-path]')].filter((f) => kind !== 'profile' || f.dataset.path!.startsWith('profile.'));
+      const nx = fields[fields.indexOf(el) + 1];
+      if (nx) { window.setTimeout(() => nx.focus(), 0); return; }
+      const { ops } = live.current;
+      const s = docRef.current?.sections.find((x) => x.id === a);
+      if (kind === 'item' && s && s.type !== 'summary') ops.addItem(s, b);
+    },
+  }), [update, usePhoto, select]);
+
+  /** Leva até um texto do currículo e começa a editá-lo (depois que a alteração que o criou aparecer). */
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const focusPath = useCallback((path: string, onMissing?: () => void) => {
+    window.setTimeout(() => {
+      const el = sheetRef.current?.querySelector<HTMLElement>(`[data-path="${CSS.escape(path)}"]`);
+      if (!el) return onMissing?.();
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.focus({ preventScroll: true });
+    }, 60);
+  }, []);
+  const scrollToSel = (selector: string) => window.setTimeout(() => sheetRef.current?.querySelector(selector)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+
+  // Seleção que deixou de existir (item removido, desfazer…) volta para o documento
+  const selOk = !doc || sel.kind === 'doc' || sel.kind === 'profile' || sel.kind === 'contacts' || sel.kind === 'photo'
+    || doc.sections.some((s) => s.id === sel.sec && !s.hidden && (sel.kind === 'sec' || s.items.some((i) => i.id === sel.item)));
+  const cur: Sel = selOk ? sel : { kind: 'doc' };
+  const ops = useSelOps(doc, update, cur, select, focusPath);
+  const live = useRef({ cur, pop, ops });
+  live.current = { cur, pop, ops };
+
+  /** Clique na prévia: seleciona o item, a seção, os dados pessoais ou a foto sob o cursor. */
+  const onStageDown = (e: React.MouseEvent) => {
+    const t = e.target as HTMLElement;
+    if (t.closest('[data-path]')) return; // o próprio texto avisa o que é (EditApi.focus)
+    const it = t.closest<HTMLElement>('[data-item]');
+    if (it) { const [s, i] = it.dataset.item!.split('/'); return select({ kind: 'item', sec: s, item: i }); }
+    const s = t.closest<HTMLElement>('[data-sec]');
+    if (s) return select({ kind: 'sec', sec: s.dataset.sec! });
+    const c = t.closest<HTMLElement>('[data-ctx]');
+    if (c) return select({ kind: c.dataset.ctx as 'profile' | 'contacts' | 'photo' });
+    select({ kind: 'doc' });
+  };
+
+  /** Itens da análise ATS: leva até o ponto do currículo (ou abre o ajuste certo). */
+  const goTarget = (t: string) => {
+    setMode('live');
+    const [kind, a, b, c] = t.split('.');
+    if (kind === 'tab') return openPanel('template');
+    if (t === 'profile.photo') { select({ kind: 'photo' }); return scrollToSel('[data-ctx="photo"]'); }
+    if (kind === 'profile') return focusPath(t, () => select({ kind: 'contacts' }, 'more'));
+    if (kind === 'section') {
+      const s = doc?.sections.find((x) => x.type === a);
+      if (!s) return ops.addSection(a as never);
+      if (s.hidden) update((r) => ({ ...r, sections: r.sections.map((x) => (x.id === s.id ? { ...x, hidden: false } : x)) }));
+      select({ kind: 'sec', sec: s.id });
+      return scrollToSel(`[data-sec="${s.id}"]`);
+    }
+    if (kind === 'item' && (c === 'start' || c === 'end')) { select({ kind: 'item', sec: a, item: b }, 'period'); return scrollToSel(`[data-item="${a}/${b}"]`); }
+    focusPath(t);
+  };
 
   const undo = useCallback(() => {
     const h = hist.current;
@@ -147,8 +265,23 @@ export function Editor({ id, initialTab }: { id: string; initialTab?: string }) 
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
       const mod = e.ctrlKey || e.metaKey;
-      if (!mod || !docRef.current) return;
+      if (!docRef.current) return;
+      const typing = (e.target as HTMLElement).closest?.('input, textarea, select, [contenteditable]');
+      const { cur, pop, ops } = live.current;
+      // Atalhos da seleção (fora de campos de texto)
+      if (!mod && !typing) {
+        if (e.key === 'Escape') {
+          if (pop) setPop(null);
+          else if (cur.kind === 'item') select({ kind: 'sec', sec: cur.sec });
+          else select({ kind: 'doc' });
+        } else if ((e.key === 'Delete' || e.key === 'Backspace') && (cur.kind === 'item' || cur.kind === 'sec')) { e.preventDefault(); ops.remove(); }
+        else if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown') && (cur.kind === 'item' || cur.kind === 'sec')) { e.preventDefault(); ops.moveSel(e.key === 'ArrowUp' ? -1 : 1); }
+        return;
+      }
+      if (!mod) return;
       const key = e.key.toLowerCase();
+      if (key === '\\') { e.preventDefault(); setPanel((o) => !o); return; }
+      if (key === 'd' && !typing && cur.kind === 'item') { e.preventDefault(); ops.duplicate(); return; }
       if (key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
       else if (key === 'y' || (key === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
       else if (key === 'e') { e.preventDefault(); exportPdf(docRef.current, e.shiftKey ? { ats: true } : {}); }
@@ -157,13 +290,12 @@ export function Editor({ id, initialTab }: { id: string; initialTab?: string }) 
     };
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
-  }, [undo, redo, exportPdf, toast]);
+  }, [undo, redo, exportPdf, toast, select, setPanel]);
 
   // ── Prévia ──────────────────────────────────────────────────────────────────
   const [mode, setMode] = useState<'live' | 'pdf'>('live');
   const [zoom, setZoom] = useState<'fit' | number>('fit');
   const scrollRef = useRef<HTMLDivElement>(null);
-  const sheetRef = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ w: 800, h: 600 });
   const [sheetH, setSheetH] = useState(1123);
   useLayoutEffect(() => {
@@ -184,7 +316,7 @@ export function Editor({ id, initialTab }: { id: string; initialTab?: string }) 
 
   const paper = doc?.style.paper === 'Letter' ? 'Letter' : 'A4';
   const [pw, ph] = SHEET_PX[paper];
-  const scale = zoom === 'fit' ? Math.min(1.6, Math.max(0.3, (box.w - 80) / pw)) : zoom;
+  const scale = zoom === 'fit' ? Math.min(1.6, Math.max(0.3, (box.w - 80 - DOCK_W) / pw)) : zoom;
   // Estimativa de páginas e posições das quebras
   const usable1 = ph - PDF_MARGIN_MM * MM;
   const usableN = ph - 2 * PDF_MARGIN_MM * MM;
@@ -280,28 +412,15 @@ export function Editor({ id, initialTab }: { id: string; initialTab?: string }) 
           <button className="btn primary icon" style={{ borderRadius: '0 11px 11px 0', marginLeft: 1, width: 32 }} aria-label="Mais opções de exportação" onClick={exportMenu}><Icon name="chevron-down" size={16} /></button>
         </div>
       </TopBar>
-      <div className="ed" style={{ flex: 1, minHeight: 0 }}>
-        <section className="ed-left">
-          <div className="ed-tabs">
-            <Segmented value={tab} onChange={setTab} label="Seções do editor" options={[
-              { value: 'content', label: 'Conteúdo' }, { value: 'template', label: 'Modelo' }, { value: 'style', label: 'Estilo' }, { value: 'ats', label: 'Análise' },
-            ]} />
-          </div>
-          <div className="ed-scroll">
-            {tab === 'content' && <ContentPanel doc={doc} update={update} focusTarget={focusTarget} clearFocus={() => setFocusTarget(null)} />}
-            {tab === 'template' && <TemplatePanel doc={doc} update={update} />}
-            {tab === 'style' && <StylePanel doc={doc} update={update} pages={pages} onFit={fitOnePage} />}
-            {tab === 'ats' && <AtsPanel doc={doc} onGo={(t) => { if (t === 'tab.template') setTab('template'); else { setTab('content'); setFocusTarget(t); } }} onExportAts={() => exportPdf(doc, { ats: true })} />}
-          </div>
-        </section>
-        <section className="ed-right">
+      <div className={`ed ${panel ? '' : 'ed-full'}`} style={{ flex: 1, minHeight: 0 }}>
+        <section className="ed-main">
           <div className="pv-bar">
             <Segmented size="sm" value={mode} onChange={setMode} label="Tipo de prévia" options={[
-              { value: 'live', label: 'Ao vivo', title: 'Clique em qualquer texto do currículo para editar ali mesmo' }, { value: 'pdf', label: 'PDF final', title: 'O arquivo exatamente como será exportado (Ctrl+P)' },
+              { value: 'live', label: 'Ao vivo', title: 'Clique no currículo para editar ali mesmo' }, { value: 'pdf', label: 'PDF final', title: 'O arquivo exatamente como será exportado (Ctrl+P)' },
             ]} />
             <span className="badge">{tpl.name}</span>
             {mode === 'live' ? <span className={`badge ${pages > 2 ? 'warn' : ''} num`} title="Estimativa; confira em PDF final">≈ {pages} {pages === 1 ? 'página' : 'páginas'}</span> : null}
-            {mode === 'live' ? <span className="hint" style={{ marginLeft: 4 }}><Icon name="edit" size={13} style={{ verticalAlign: '-2px', marginRight: 4 }} />Clique no texto do currículo para editar</span> : null}
+            {mode === 'live' ? <span className="pv-crumb-slot" ref={setCrumbSlot} /> : null}
             <div className="sp" />
             {mode === 'live' ? <>
               {pages > 1 ? <button className="btn ghost sm" onClick={fitOnePage} title="Diminui fonte e espaçamento até caber"><Icon name="wand" size={15} />Caber em 1 página</button> : null}
@@ -312,16 +431,25 @@ export function Editor({ id, initialTab }: { id: string; initialTab?: string }) 
               {pdfBusy ? <span className="save-state saving"><span className="led" />Gerando PDF…</span> : null}
               {pdfUrl ? <button className="btn ghost sm" onClick={() => exportPdf(doc)}><Icon name="download" size={15} />Salvar este PDF</button> : null}
             </>}
+            <button className={`iconbtn ${panel ? 'on' : ''}`} title={`${panel ? 'Ocultar' : 'Mostrar'} painel de modelo, estilo e análise (Ctrl+\\)`} aria-pressed={panel} onClick={() => setPanel((o) => !o)}>
+              <Icon name="sidebar" size={17} style={{ transform: 'scaleX(-1)' }} />
+            </button>
           </div>
           {mode === 'live' ? (
-            <div className="pv-scroll" ref={scrollRef}>
-              <div className="pv-stage">
-                <div className="pv-sheet" style={{ width: pw * scale, height: Math.max(ph, contentH + PDF_MARGIN_MM * MM) * scale }} ref={sheetRef}>
-                  <div className="scaler" style={{ transform: `scale(${scale})`, width: pw }}><EditCtx.Provider value={editApi}><Sheet resume={doc} editable /></EditCtx.Provider></div>
-                  {breaks.map((y, i) => <div key={i} className="pv-guide" style={{ top: y * scale }}><span>Página {i + 2}</span></div>)}
+            <>
+              <div className="pv-scroll" ref={scrollRef}>
+                <div className="pv-stage pv-stage-dock" onMouseDown={onStageDown}>
+                  <div className="pv-sheet" style={{ width: pw * scale, height: Math.max(ph, contentH + PDF_MARGIN_MM * MM) * scale }} ref={sheetRef}>
+                    <div className="scaler" style={{ transform: `scale(${scale})`, width: pw }}><EditCtx.Provider value={editApi}><Sheet resume={doc} editable /></EditCtx.Provider></div>
+                    {breaks.map((y, i) => <div key={i} className="pv-guide" style={{ top: y * scale }}><span>Página {i + 2}</span></div>)}
+                    <AddChip sheet={sheetRef} sel={cur} doc={doc} onAdd={() => { const s = ops.sec; if (s) ops.addItem(s, ops.item?.id); }} />
+                  </div>
                 </div>
               </div>
-            </div>
+              <style>{selCss(cur)}</style>
+              <ContextDock crumbSlot={crumbSlot} doc={doc} update={update} sel={cur} select={select} pop={pop} setPop={setPop} ops={ops} pages={pages} onFit={fitOnePage}
+                onPanel={openPanel} pickPhoto={() => photoInput.current?.click()} focusPath={focusPath} />
+            </>
           ) : (
             <div className="pv-scroll" style={{ overflow: 'hidden' }}>
               {pdfUrl ? <iframe className="pv-pdf" src={`${pdfUrl}#view=FitH&toolbar=1`} title="PDF final" /> : null}
@@ -330,6 +458,21 @@ export function Editor({ id, initialTab }: { id: string; initialTab?: string }) 
             </div>
           )}
         </section>
+        {panel ? (
+          <aside className="ed-side">
+            <div className="ed-tabs">
+              <Segmented value={tab} onChange={setTab} label="Painel do editor" options={[
+                { value: 'template', label: 'Modelo' }, { value: 'style', label: 'Estilo' }, { value: 'ats', label: 'Análise' },
+              ]} />
+              <button className="iconbtn" title="Ocultar painel (Ctrl+\)" onClick={() => setPanel(false)}><Icon name="x" size={17} /></button>
+            </div>
+            <div className="ed-scroll">
+              {tab === 'template' && <TemplatePanel doc={doc} update={update} />}
+              {tab === 'style' && <StylePanel doc={doc} update={update} pages={pages} onFit={fitOnePage} />}
+              {tab === 'ats' && <AtsPanel doc={doc} onGo={goTarget} onExportAts={() => exportPdf(doc, { ats: true })} />}
+            </div>
+          </aside>
+        ) : null}
       </div>
       {menu.node}
       <input ref={photoInput} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => { usePhoto(e.target.files?.[0]); e.target.value = ''; }} />
