@@ -1,0 +1,95 @@
+# electron-builder — https://www.electron.build/configuration/configuration
+# Os instaladores são gerados pelo GitHub Actions (.github/workflows/release.yml),
+# uma máquina por sistema/arquitetura.
+
+appId: io.github.luiscriativo.curriculodobrasil
+productName: CurriculoDoBrasil
+copyright: Copyright © 2026 luiscriativo
+
+directories:
+  buildResources: assets
+  output: dist
+
+asar: true
+files:
+  - src/main/**/*
+  - src/shared/**/*
+  - out/renderer/**/*
+  - assets/icon.png
+  - package.json
+  - "!**/*.map"
+  - "!node_modules/pdfjs-dist/**/*.map"
+  - "!node_modules/pdfjs-dist/{web,image_decoders,types}/**/*"
+  - "!node_modules/pdfjs-dist/build/**/*"
+  # O pdf.js só extrai texto aqui; o módulo nativo de desenho (opcional) não é usado
+  - "!node_modules/@napi-rs/**/*"
+
+# Só os idiomas do Chromium que o app usa (menos ~45 MB instalado)
+electronLanguages: [pt-BR, en-US, es]
+
+extraResources:
+  - from: LICENSE
+    to: LICENSE.txt
+
+# ── Atualização automática (src/main/updater.js) ─────────────────────────────
+publish:
+  provider: github
+  owner: luiscriativo
+  repo: curriculodobrasil
+  releaseType: release
+
+# ── macOS: assinatura ad-hoc sem certificado (ver scripts/adhoc-sign.js) ─────
+afterSign: scripts/adhoc-sign.js
+
+# Nomes no padrão CurriculoDoBrasil-<versão>-<sistema>-<arquitetura>
+win:
+  executableName: CurriculoDoBrasil
+  icon: assets/icon.png
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+    - target: portable
+      arch: [x64]
+
+nsis:
+  artifactName: ${productName}-${version}-win-${arch}-setup.${ext}
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Currículo do Brasil
+  deleteAppDataOnUninstall: false
+
+portable:
+  artifactName: ${productName}-${version}-win-${arch}-portable.${ext}
+
+mac:
+  icon: assets/icon.png
+  category: public.app-category.productivity
+  notarize: false
+  artifactName: ${productName}-${version}-mac-${arch}.${ext}
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+
+dmg:
+  title: Currículo do Brasil
+  iconSize: 80
+  window:
+    width: 540
+    height: 380
+
+linux:
+  icon: assets/icon.png
+  executableName: curriculodobrasil
+  category: Office
+  maintainer: luiscriativo <luiscriativo@gmail.com>
+  artifactName: ${productName}-${version}-linux-${arch}.${ext}
+  desktop:
+    entry:
+      Name: Currículo do Brasil
+  target:
+    - target: AppImage
+    - target: deb
+    - target: rpm
+

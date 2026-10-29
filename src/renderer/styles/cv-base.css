@@ -1,0 +1,138 @@
+/* Base de todos os modelos de currículo. Cada modelo sobrescreve com o próprio CSS (.tpl-<id>). */
+.cv {
+  --ink: #1f1f1f;
+  --muted: #6b6b6b;
+  --line: #d9d9d9;
+  --soft: color-mix(in srgb, var(--accent) 12%, white);
+  --ls-max: .05em; /* ver injectTemplateCss */
+  position: relative;
+  width: var(--pw);
+  min-height: var(--ph);
+  box-sizing: border-box;
+  background: #fff;
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: calc(9pt * var(--fs));
+  line-height: 1.45;
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+  overflow-wrap: break-word;
+  font-kerning: normal;
+  font-feature-settings: normal;
+  user-select: text;
+}
+.cv *, .cv *::before, .cv *::after { box-sizing: border-box; }
+.cv.ls-design { --ls-max: 10em; }
+.cv h1, .cv h2, .cv h3, .cv p, .cv ul, .cv ol { margin: 0; padding: 0; font-weight: inherit; }
+.cv a { color: inherit; text-decoration: none; }
+.cv ul { list-style: none; }
+.cv .en-desc ul { list-style: disc; padding-left: 1.15em; }
+.cv .en-desc li { margin: .14em 0; }
+.cv .en-desc p + p, .cv .en-desc p + ul, .cv .en-desc ul + p { margin-top: .3em; }
+.cv .sum p + p { margin-top: .45em; }
+
+/* Camada de fundo: em tela ocupa a folha toda; no PDF repete em todas as páginas */
+.cv .bg { position: absolute; top: 0; bottom: 0; left: 0; width: 0; pointer-events: none; z-index: 0; }
+.cv > :not(.bg) { position: relative; z-index: 1; }
+@media print { .cv .bg { position: fixed; } }
+
+/* No PDF o respiro inferior vem das margens de @page (ver PrintView) */
+.print-mode .cv { padding-bottom: 0 !important; min-height: 0 !important; }
+.print-mode .cv .pad { padding-bottom: 0 !important; -webkit-box-decoration-break: slice; box-decoration-break: slice; }
+.print-mode body { margin: 0; }
+
+/* Sem isto o Chromium prefere quebrar a página ANTES do bloco de colunas (deixando a página 1 quase
+   vazia) quando qualquer quebra dentro das colunas cairia num item "não quebrar" de uma delas */
+.cv > :not(.bg) + :not(.bg), .cv .cols, .cv .body, .cv .lower, .cv .row { break-before: avoid; }
+
+/* Colunas que continuam na próxima página repetem o respiro de cima/baixo */
+.cv .pad { -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+
+/* Nome, cargo */
+.cv .nm { font-family: var(--f-head); font-weight: 700; line-height: 1.05; overflow-wrap: normal; word-break: normal; hyphens: none; }
+.cv .nm-first, .cv .nm-last { display: inline; }
+.cv .jt { font-family: var(--f-head); }
+
+/* Seções */
+.cv .sec { margin-bottom: calc(1.35em * var(--sp)); }
+.cv .sec:last-child { margin-bottom: 0; }
+.cv .sec-t { font-family: var(--f-head); font-weight: 700; font-size: 1.12em; letter-spacing: .08em; text-transform: uppercase; margin-bottom: calc(.6em * var(--sp)); display: flex; align-items: center; gap: .5em; break-after: avoid; page-break-after: avoid; }
+.cv .sec-ic { display: inline-flex; }
+
+/* Itens com período */
+.cv .en { margin-bottom: calc(.85em * var(--sp)); break-inside: avoid; page-break-inside: avoid; }
+.cv .en:last-child { margin-bottom: 0; }
+.cv .en-t { font-weight: 700; font-size: 1.03em; line-height: 1.3; }
+.cv .en-s { color: var(--muted); }
+.cv .en-d { color: var(--muted); font-size: .9em; white-space: nowrap; }
+.cv .en-desc { margin-top: .3em; }
+.cv .en-h, .cv .en-meta { display: flex; justify-content: space-between; align-items: baseline; gap: 1em; }
+.cv .en-h .en-t, .cv .en-meta .en-s { min-width: 0; }
+.cv .en-left, .cv .en-right { display: grid; grid-template-columns: 7.2em 1fr; gap: .2em 1.1em; }
+.cv .en-right { grid-template-columns: 1fr auto; }
+.cv .en-left .en-d { white-space: normal; padding-top: .1em; }
+.cv .en-top .en-d { margin-bottom: .1em; }
+.cv .en-timeline { position: relative; padding-left: 1.4em; padding-bottom: .1em; }
+.cv .en-timeline::before { content: ''; position: absolute; left: .3em; top: .45em; bottom: calc(-.85em * var(--sp)); width: 1px; background: var(--line); }
+.cv .en-timeline:last-child::before { bottom: 0; }
+.cv .en-timeline::after { content: ''; position: absolute; left: 0; top: .35em; width: .65em; height: .65em; border-radius: 50%; background: #fff; border: 1.5px solid var(--accent); }
+
+/* Níveis */
+.cv .lv li { break-inside: avoid; }
+.cv .lv-bars li, .cv .lv-dots li, .cv .lv-segments li, .cv .lv-list li { display: flex; align-items: center; justify-content: space-between; gap: .8em; margin: .38em 0; }
+.cv .lv-n { min-width: 0; }
+.cv .lv-bar { flex: 0 0 42%; height: .38em; background: color-mix(in srgb, var(--accent) 18%, white); border-radius: 1em; overflow: hidden; }
+.cv .lv-bar i { display: block; height: 100%; width: var(--lv); background: var(--accent); border-radius: inherit; }
+.cv .lv-pips, .cv .lv-segpips { display: inline-flex; gap: .3em; flex: none; }
+.cv .lv-pips i { width: .62em; height: .62em; border-radius: 50%; background: color-mix(in srgb, var(--accent) 20%, white); }
+.cv .lv-pips i.on, .cv .lv-segpips i.on { background: var(--accent); }
+.cv .lv-segpips i { width: 1.15em; height: .38em; background: color-mix(in srgb, var(--accent) 18%, white); }
+.cv .lv-lb { color: var(--muted); font-size: .9em; }
+.cv .lv-tags { display: flex; flex-wrap: wrap; gap: .4em; }
+.cv .lv-tags li { padding: .22em .7em; border-radius: 1em; background: var(--soft); }
+.cv .lv-bullets { list-style: disc; padding-left: 1.1em; }
+.cv .lv-bullets li { margin: .2em 0; }
+.cv .lv-columns { columns: 2; column-gap: 1.5em; list-style: disc; padding-left: 1.1em; }
+.cv .lv-columns li { margin: .2em 0; }
+.cv .lv-circles { display: flex; flex-wrap: wrap; gap: .8em 1em; }
+.cv .lv-circles li { display: flex; flex-direction: column; align-items: center; gap: .3em; width: 4.6em; text-align: center; font-size: .9em; }
+.cv .lv-ring { width: 3.4em; height: 3.4em; transform: rotate(-90deg); }
+.cv .lv-ring circle { fill: none; stroke-width: 3; }
+.cv .lv-ring .tr { stroke: color-mix(in srgb, var(--accent) 18%, white); }
+.cv .lv-ring .fl { stroke: var(--accent); stroke-linecap: round; }
+.cv .en-dur { display: block; font-weight: 400; opacity: .85; }
+.cv .lv-checks li { display: flex; gap: .5em; align-items: center; margin: .25em 0; }
+.cv .lv-checks svg { color: var(--accent); flex: none; }
+.cv .lv-icons { display: flex; flex-wrap: wrap; gap: .8em 1.2em; }
+.cv .lv-icons li { display: flex; flex-direction: column; align-items: center; gap: .3em; font-size: .88em; min-width: 3.5em; }
+
+/* Contatos */
+.cv .ct li { display: flex; align-items: center; gap: .65em; margin: .35em 0; min-width: 0; }
+.cv .ct-ic { display: inline-flex; flex: none; }
+.cv .ct-v { min-width: 0; }
+.cv .ct li .ct-v { display: block; white-space: nowrap; overflow: hidden; } /* encolhe em vez de quebrar e-mail/link (fitNames) */
+.cv .ct-labels li { display: block; }
+.cv .ct-labels .ct-l { display: block; font-weight: 700; }
+.cv .ct-inline { display: flex; flex-wrap: wrap; gap: .2em 0; }
+.cv .ct-sep { opacity: .55; padding: 0 .1em; }
+.cv .ct-iconsInline { display: flex; flex-wrap: wrap; gap: .4em 1.4em; }
+.cv .ct-iconsInline li { margin: 0; }
+.cv .ct-right li { justify-content: flex-end; text-align: right; }
+.cv .ct-letter .ct-l { font-weight: 700; width: 1.1em; }
+
+/* Foto */
+.cv .ph { overflow: hidden; background: #ddd; flex: none; }
+.cv .ph img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: var(--px) var(--py); transform: scale(var(--pz)); transform-origin: var(--px) var(--py); }
+.cv .ph-circle { border-radius: 50%; }
+.cv .ph-rounded { border-radius: 12%; }
+.cv .ph-square { border-radius: 0; }
+.cv .ph-arch { border-radius: 999px 999px 0 0; }
+.cv .ph-gray img { filter: grayscale(1); }
+
+/* Colunas escuras */
+.cv .dark .lv-tags li { background: rgba(255,255,255,.14); color: inherit; }
+.cv .dark .en-timeline::after { background: transparent; border-color: currentColor; }
+.cv .dark .en-timeline::before { background: rgba(255,255,255,.3); }
+.cv .dark a { color: inherit; }

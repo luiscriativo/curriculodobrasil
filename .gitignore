@@ -1,6 +1,57 @@
+# ── Node ─────────────────────────────────────────────────────────────────────
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── Build ────────────────────────────────────────────────────────────────────
 dist/
+out/
+builder-effective-config.yaml
+builder-debug.yml
+
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ── Dados de demonstração / testes locais ────────────────────────────────────
+demo-data/
+coverage/
+# Imagens de referência dos modelos (material de terceiros, só para consulta local)
+modelos/
+
+# ── Sistema operacional ──────────────────────────────────────────────────────
 .DS_Store
-*.local
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ── Editores ─────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.suo
+*.sw?
+
+# ── Ambiente e segredos ──────────────────────────────────────────────────────
 .env
 .env.*
+*.pem
+*.p12
+*.pfx
+
+# ── Logs e cache ─────────────────────────────────────────────────────────────
+logs/
+*.log
+.cache/
+
+# ── Claude Code ──────────────────────────────────────────────────────────────
+# Só as skills do projeto são versionadas; configurações locais ficam de fora.
+.claude/*
+!.claude/skills/

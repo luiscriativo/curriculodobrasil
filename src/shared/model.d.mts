@@ -1,0 +1,20 @@
+// Tipos dos módulos compartilhados (o código é JavaScript puro para rodar também no Node/testes)
+import type { Item, Resume, Section } from '../renderer/types';
+export const SCHEMA_VERSION: number;
+export const SECTION_TITLES: Record<string, Record<string, string>>;
+export const LEVEL_LABELS: Record<string, Record<string, string[]>>;
+export const SECTION_TYPES: Record<string, { kind: 'entry' | 'level' | 'text' | 'tag'; icon: string; single?: boolean; fields: { key: string; label: string; placeholder?: string; type?: string; title?: boolean; half?: boolean }[] }>;
+export const SECTION_ORDER: string[];
+export const DEFAULT_STYLE: Resume['style'];
+export function uid(): string;
+export function sectionTitle(section: Pick<Section, 'type' | 'title'>, lang?: string): string;
+export function newItem(type: string): Item;
+export function newSection(type: string): Section;
+export function emptyProfile(): Resume['profile'];
+export function createResume(o?: { name?: string; title?: string; template?: string; lang?: string }): Resume;
+export function normalizeResume(input: unknown): Resume;
+export function duplicateResume(r: Resume, suffix?: string): Resume;
+export function parseDescription(text: string): ({ type: 'p'; text: string } | { type: 'ul'; items: string[] })[];
+export function safeFileName(name: string, fallback?: string): string;
+export function exportFileName(pattern: string, resume: { profile?: { name?: string; title?: string }; docTitle?: string }, now?: Date): string;
+export function plural(n: number, one: string, many: string): string;
