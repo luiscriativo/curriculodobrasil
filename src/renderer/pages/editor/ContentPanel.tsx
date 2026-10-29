@@ -28,28 +28,43 @@ export function ContentPanel({ doc, update, focusTarget, clearFocus }: { doc: Re
   const menu = useMenu();
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // Vindo da análise ATS: abre e destaca o lugar certo
+  const [openItemReq, setOpenItemReq] = useState<{ id: string; n: number } | null>(null);
+
+  // Vindo da análise ATS ou de um clique no currículo: abre e destaca o campo certo.
+  // Alvos: profile.<campo> · section.<tipo> · sec.<seção>.<text|title> · item.<seção>.<item>.<campo>
+  // "|soft" = o usuário está digitando no currículo: só mostra o campo, sem tirar o foco de lá.
   useEffect(() => {
     if (!focusTarget) return;
-    const [kind, key] = focusTarget.split('.');
+    const [target, flag] = focusTarget.split('|');
+    const soft = flag === 'soft';
+    const [kind, a, b, c] = target.split('.');
     let blockId = 'profile';
+    let field: string | null = kind === 'profile' ? a : null;
     if (kind === 'section') {
-      const s = doc.sections.find((x) => x.type === key);
+      const s = doc.sections.find((x) => x.type === a);
       if (s) blockId = s.id;
       else {
-        const ns = newSection(key) as Section;
+        const ns = newSection(a) as Section;
         update((r) => ({ ...r, sections: [...r.sections, ns] }));
         blockId = ns.id;
       }
+    } else if (kind === 'sec') {
+      blockId = a;
+      field = b === 'text' ? `${a}.text` : null;
+    } else if (kind === 'item') {
+      blockId = a;
+      field = `${b}.${c === 'end' ? 'start' : c}`;
+      setOpenItemReq({ id: b, n: Date.now() });
     }
     setOpen((o) => ({ ...o, [blockId]: true }));
     setFlash(blockId);
     window.setTimeout(() => {
-      const el = rootRef.current?.querySelector(`[data-block="${blockId}"]`);
-      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      if (kind === 'profile') (rootRef.current?.querySelector(`[data-k="${key}"]`) as HTMLElement | null)?.focus();
-    }, 60);
-    window.setTimeout(() => setFlash(null), 1600);
+      const fieldEl = field ? (rootRef.current?.querySelector(`[data-k="${field}"]`) as HTMLElement | null) : null;
+      const el = fieldEl || rootRef.current?.querySelector(`[data-block="${blockId}"]`);
+      el?.scrollIntoView({ behavior: 'smooth', block: soft ? 'nearest' : 'center' });
+      if (!soft) fieldEl?.focus();
+    }, 80);
+    window.setTimeout(() => setFlash(null), 1400);
     clearFocus();
   }, [focusTarget]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -77,7 +92,7 @@ export function ContentPanel({ doc, update, focusTarget, clearFocus }: { doc: Re
     <div ref={rootRef}>
       <ProfileBlock doc={doc} update={update} open={!!open.profile} flash={flash === 'profile'} toggle={() => setOpen((o) => ({ ...o, profile: !o.profile }))} />
       {doc.sections.map((s, i) => (
-        <SectionBlock key={s.id} s={s} index={i} total={doc.sections.length} doc={doc} update={update} setSection={setSection}
+        <SectionBlock key={s.id} s={s} index={i} total={doc.sections.length} doc={doc} update={update} setSection={setSection} openItemReq={openItemReq}
           open={!!open[s.id]} flash={flash === s.id} toggle={() => setOpen((o) => ({ ...o, [s.id]: !o[s.id] }))} />
       ))}
       <button className="btn" style={{ width: '100%', height: 42, borderStyle: 'dashed' }} onClick={addMenu}><Icon name="plus" size={17} />Adicionar seção</button>
@@ -211,7 +226,8 @@ function PhotoField({ doc, update }: { doc: Resume; update: Update }) {
 }
 
 // ── Seções ───────────────────────────────────────────────────────────────────
-function SectionBlock({ s, index, total, doc, update, setSection, open, toggle, flash }: {
+function SectionBlock({ s, index, total, doc, update, setSection, open, toggle, flash, openItemReq }: {
+  openItemReq?: { id: string; n: number } | null;
   s: Section; index: number; total: number; doc: Resume; update: Update; setSection: (id: string, fn: (s: Section) => Section, c?: string) => void; open: boolean; toggle: () => void; flash: boolean;
 }) {
   const T = TYPES[s.type];
@@ -219,6 +235,9 @@ function SectionBlock({ s, index, total, doc, update, setSection, open, toggle, 
   const menu = useMenu();
   const [renaming, setRenaming] = useState(false);
   const [openItem, setOpenItem] = useState<string | null>(s.items.length === 1 ? s.items[0].id : null);
+  useEffect(() => {
+    if (openItemReq && s.items.some((i) => i.id === openItemReq.id)) setOpenItem(openItemReq.id);
+  }, [openItemReq]); // eslint-disable-line react-hooks/exhaustive-deps
   const title = sectionTitle(s, doc.style.lang);
   const count = s.type === 'summary' ? (s.text.trim() ? `${s.text.trim().length} caracteres` : 'vazio') : `${s.items.length} ${s.items.length === 1 ? 'item' : 'itens'}`;
 
@@ -240,6 +259,8 @@ function SectionBlock({ s, index, total, doc, update, setSection, open, toggle, 
     const it = newItem(s.type) as Item;
     setSection(s.id, (x) => ({ ...x, items: [...x.items, it] }));
     setOpenItem(it.id);
+    // Foco no primeiro campo do item novo (clicado no painel, não no currículo)
+    window.setTimeout(() => (document.querySelector(`[data-k="${it.id}.${T.kind === "entry" ? "role" : "name"}"]`) as HTMLElement | null)?.focus(), 60);
   };
 
   return (
@@ -266,7 +287,7 @@ function SectionBlock({ s, index, total, doc, update, setSection, open, toggle, 
           ) : null}
           {s.type === 'summary' ? (
             <div className="field">
-              <textarea className="textarea" rows={6} value={s.text} spellCheck placeholder="Em 3 a 5 linhas: quem você é, sua experiência e os resultados que entrega. Ex.: Analista financeira com 5 anos de experiência…"
+              <textarea className="textarea" data-k={`${s.id}.text`} rows={6} value={s.text} spellCheck placeholder="Em 3 a 5 linhas: quem você é, sua experiência e os resultados que entrega. Ex.: Analista financeira com 5 anos de experiência…"
                 onChange={(e) => setSection(s.id, (x) => ({ ...x, text: e.target.value }), `${s.id}.text`)} />
               <span className={`hint ${s.text.length > 900 ? 'bad' : ''}`}>{s.text.length} caracteres · ideal entre 200 e 900</span>
             </div>
@@ -274,7 +295,7 @@ function SectionBlock({ s, index, total, doc, update, setSection, open, toggle, 
             <>
               {s.items.map((it, i) => (
                 <div className="lvl-row" key={it.id}>
-                  <input className="input" value={it.name} placeholder={T.fields[0].placeholder} autoFocus={it.id === openItem && !it.name}
+                  <input className="input" data-k={`${it.id}.name`} value={it.name} placeholder={T.fields[0].placeholder}
                     onChange={(e) => setItem(it.id, { name: e.target.value }, 'name')}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addItem(); } }} />
                   {T.kind === 'level' ? <Level type={s.type} value={it.level} lang={doc.style.lang} onChange={(v) => setItem(it.id, { level: v }, 'level')} /> : <span />}
@@ -340,7 +361,7 @@ function EntryItem({ it, fields, lang, open, toggle, set, first, last, onMove, o
               return (
                 <div className="field" key={f.key}>
                   <label>{f.label}</label>
-                  <textarea className="textarea" rows={4} spellCheck value={String(it[f.key as keyof Item] || '')} placeholder={f.placeholder}
+                  <textarea className="textarea" data-k={`${it.id}.${f.key}`} rows={4} spellCheck value={String(it[f.key as keyof Item] || '')} placeholder={f.placeholder}
                     onChange={(e) => set({ [f.key]: e.target.value } as Partial<Item>, f.key)}
                     onKeyDown={(e) => {
                       // Enter numa linha de tópico já começa o próximo tópico
@@ -362,8 +383,8 @@ function EntryItem({ it, fields, lang, open, toggle, set, first, last, onMove, o
             return (
               <div className="field" key={f.key}>
                 <label>{f.label}</label>
-                <input className="input" value={String(it[f.key as keyof Item] || '')} placeholder={f.placeholder} spellCheck={f.key !== 'org'}
-                  onChange={(e) => set({ [f.key]: e.target.value } as Partial<Item>, f.key)} autoFocus={f.title && !head} />
+                <input className="input" data-k={`${it.id}.${f.key}`} value={String(it[f.key as keyof Item] || '')} placeholder={f.placeholder} spellCheck={f.key !== 'org'}
+                  onChange={(e) => set({ [f.key]: e.target.value } as Partial<Item>, f.key)} />
               </div>
             );
           })}
@@ -380,7 +401,7 @@ function Period({ it, set, single }: { it: Item; set: (p: Partial<Item>, key: st
   return (
     <div className="field">
       <div className="grid2" style={{ gridTemplateColumns: single ? '1fr 1fr' : '1fr 1fr', alignItems: 'end' }}>
-        <div className="field"><label>{single ? 'Data' : 'Início'}</label><input className={`input ${bad(it.start) ? 'invalid' : ''}`} placeholder="MM/AAAA" value={it.start} onChange={(ev) => set({ start: ev.target.value }, 'start')} /></div>
+        <div className="field"><label>{single ? 'Data' : 'Início'}</label><input data-k={`${it.id}.start`} className={`input ${bad(it.start) ? 'invalid' : ''}`} placeholder="MM/AAAA" value={it.start} onChange={(ev) => set({ start: ev.target.value }, 'start')} /></div>
         {!single ? (
           <div className="field"><label>Fim</label><input className={`input ${bad(it.end) ? 'invalid' : ''}`} placeholder={it.current ? 'Atual' : 'MM/AAAA'} disabled={it.current} value={it.current ? '' : it.end} onChange={(ev) => set({ end: ev.target.value }, 'end')} /></div>
         ) : <span />}

@@ -13,9 +13,9 @@ function fitNames(root: HTMLElement) {
   }
 }
 
-export const Sheet = memo(function Sheet({ resume, templateId }: { resume: Resume; templateId?: string }) {
+export const Sheet = memo(function Sheet({ resume, templateId, editable }: { resume: Resume; templateId?: string; editable?: boolean }) {
   const tpl = getTemplate(templateId || resume.template);
-  const c = new Ctx(resume, tpl);
+  const c = new Ctx(resume, tpl, !!editable);
   const ref = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
     if (!ref.current) return;
@@ -27,7 +27,7 @@ export const Sheet = memo(function Sheet({ resume, templateId }: { resume: Resum
     return () => { alive = false; };
   });
   return (
-    <article ref={ref} className={`cv tpl-${tpl.id} ${resume.style.decorativeSpacing ? 'ls-design' : ''}`} style={sheetVars(resume, tpl)}
+    <article ref={ref} className={`cv tpl-${tpl.id} ${resume.style.decorativeSpacing ? 'ls-design' : ''} ${editable ? 'cv-editing' : ''}`} style={sheetVars(resume, tpl)}
       lang={{ pt: 'pt-BR', en: 'en', es: 'es' }[resume.style.lang]}>
       {tpl.render(c)}
     </article>

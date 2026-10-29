@@ -1,5 +1,5 @@
 // Editor: formulário à esquerda, prévia ao vivo (ou o PDF final) à direita. Salva sozinho.
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { TopBar } from '../App';
 import { api } from '../api';
@@ -14,6 +14,7 @@ import { StylePanel } from './editor/StylePanel';
 import { TemplatePanel } from './editor/TemplatePanel';
 import { AtsPanel } from './editor/AtsPanel';
 import { timeAgo } from '../../shared/dates.mjs';
+import { EditCtx, applyEdit, type EditApi } from '../templates/inline';
 
 type Tab = 'content' | 'template' | 'style' | 'ats';
 const MM = 96 / 25.4;
@@ -31,7 +32,7 @@ function contentHeight(cv: HTMLElement) {
     const r = c.getBoundingClientRect();
     if (r.height && r.bottom > max) max = r.bottom;
   }
-  return max ? (max - box.top) / k : cv.offsetHeight;
+  return max ? (max - box.top) / k : 0;
 }
 
 export type Update = (fn: (r: Resume) => Resume, opts?: { coalesce?: string }) => void;
@@ -99,6 +100,12 @@ export function Editor({ id, initialTab }: { id: string; initialTab?: string }) 
     setDoc(next);
     persist(next);
   }, [persist]);
+
+  /** Edição direto no currículo: grava o texto e mostra o campo correspondente no painel */
+  const editApi = useMemo<EditApi>(() => ({
+    edit: (path, value) => update((r) => applyEdit(r, path, value), { coalesce: path }),
+    focus: (path, soft) => { setTab('content'); setFocusTarget(soft ? `${path}|soft` : path); },
+  }), [update]);
 
   const undo = useCallback(() => {
     const h = hist.current;
@@ -276,10 +283,11 @@ export function Editor({ id, initialTab }: { id: string; initialTab?: string }) 
         <section className="ed-right">
           <div className="pv-bar">
             <Segmented size="sm" value={mode} onChange={setMode} label="Tipo de prévia" options={[
-              { value: 'live', label: 'Ao vivo', title: 'Atualiza enquanto você digita' }, { value: 'pdf', label: 'PDF final', title: 'O arquivo exatamente como será exportado (Ctrl+P)' },
+              { value: 'live', label: 'Ao vivo', title: 'Clique em qualquer texto do currículo para editar ali mesmo' }, { value: 'pdf', label: 'PDF final', title: 'O arquivo exatamente como será exportado (Ctrl+P)' },
             ]} />
             <span className="badge">{tpl.name}</span>
             {mode === 'live' ? <span className={`badge ${pages > 2 ? 'warn' : ''} num`} title="Estimativa; confira em PDF final">≈ {pages} {pages === 1 ? 'página' : 'páginas'}</span> : null}
+            {mode === 'live' ? <span className="hint" style={{ marginLeft: 4 }}><Icon name="edit" size={13} style={{ verticalAlign: '-2px', marginRight: 4 }} />Clique no texto do currículo para editar</span> : null}
             <div className="sp" />
             {mode === 'live' ? <>
               {pages > 1 ? <button className="btn ghost sm" onClick={fitOnePage} title="Diminui fonte e espaçamento até caber"><Icon name="wand" size={15} />Caber em 1 página</button> : null}
@@ -295,7 +303,7 @@ export function Editor({ id, initialTab }: { id: string; initialTab?: string }) 
             <div className="pv-scroll" ref={scrollRef}>
               <div className="pv-stage">
                 <div className="pv-sheet" style={{ width: pw * scale, height: Math.max(ph, contentH + PDF_MARGIN_MM * MM) * scale }} ref={sheetRef}>
-                  <div className="scaler" style={{ transform: `scale(${scale})`, width: pw }}><Sheet resume={doc} /></div>
+                  <div className="scaler" style={{ transform: `scale(${scale})`, width: pw }}><EditCtx.Provider value={editApi}><Sheet resume={doc} editable /></EditCtx.Provider></div>
                   {breaks.map((y, i) => <div key={i} className="pv-guide" style={{ top: y * scale }}><span>Página {i + 2}</span></div>)}
                 </div>
               </div>

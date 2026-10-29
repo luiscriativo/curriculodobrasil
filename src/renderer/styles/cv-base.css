@@ -136,3 +136,12 @@
 .cv .dark .en-timeline::after { background: transparent; border-color: currentColor; }
 .cv .dark .en-timeline::before { background: rgba(255,255,255,.3); }
 .cv .dark a { color: inherit; }
+
+/* Edição direto no currículo (só na prévia do editor) */
+.cv-editing .ie, .cv-editing .ie-link { cursor: text; border-radius: 3px; transition: background .12s, box-shadow .12s; outline: none; }
+.cv-editing .ie-link { cursor: pointer; }
+.cv-editing .ie:hover, .cv-editing .ie-link:hover, .cv-editing .ie:focus-visible { box-shadow: 0 0 0 2px rgba(240, 18, 127, .35); background: rgba(240, 18, 127, .05); }
+.cv-editing .ie-on { box-shadow: 0 0 0 2px #f0127f; background: rgba(240, 18, 127, .06); white-space: pre-wrap; text-transform: none; min-width: 2em; display: inline-block; }
+.cv-editing div.ie-on, .cv-editing div.ie { display: block; }
+.cv-editing .ie-empty::before, .cv-editing .ie-on:empty::before, .cv-editing .ie-on.ie-blank::before { content: attr(data-ph); color: color-mix(in srgb, currentColor 42%, transparent); font-style: italic; font-weight: 400; pointer-events: none; }
+.cv-editing .ie-empty { min-width: 1.5em; }
