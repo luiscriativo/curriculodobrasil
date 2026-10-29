@@ -74,6 +74,9 @@ mac:
 
 dmg:
   title: Currículo do Brasil
+  # Fundo em cor, sem imagem: na máquina Intel do GitHub o dmgbuild quebra ao
+  # gravar o atalho da imagem de fundo (struct.error em backgroundImageAlias)
+  backgroundColor: '#ffffff'
   iconSize: 80
   window:
     width: 540

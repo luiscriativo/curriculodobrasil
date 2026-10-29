@@ -113,7 +113,9 @@ jobs:
     # falha logo em vez de esperar o limite padrão de 6 horas
     timeout-minutes: 45
     strategy:
-      fail-fast: true
+      # Um sistema que falha não cancela os outros: dá para usar "Re-run failed
+      # jobs" e refazer só ele (a release continua só saindo com todos prontos)
+      fail-fast: false
       matrix:
         include:
           - name: mac-arm64
