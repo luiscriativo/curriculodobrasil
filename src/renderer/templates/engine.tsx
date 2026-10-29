@@ -6,7 +6,7 @@ import type { Item, Resume, Section, SectionType } from '../types';
 import { formatRange, formatDate, monthsBetween, formatDuration } from '../../shared/dates.mjs';
 import { LEVEL_LABELS, SECTION_TYPES, parseDescription, sectionTitle } from '../../shared/model.mjs';
 import { Icon } from '../components/Icon';
-import { E, PanelLink } from './inline';
+import { E, PanelLink, PhotoSlot } from './inline';
 
 export type EntryVariant = 'stack' | 'sub' | 'left' | 'timeline' | 'top' | 'right';
 export type LevelVariant = 'bars' | 'dots' | 'tags' | 'list' | 'bullets' | 'plain' | 'circles' | 'segments' | 'columns' | 'checks';
@@ -108,7 +108,8 @@ export class Ctx {
   /** Itens a desenhar: no editor também os vazios */
   items(s: Section) { return this.editing ? s.items : s.items.filter(hasContent); }
 
-  get hasPhoto() { return !!this.p.photo; }
+  /** No editor, modelos com foto reservam o espaço (com "Adicionar foto") mesmo sem foto */
+  get hasPhoto() { return !!this.p.photo || (this.editing && this.tpl.photo === 'yes'); }
   has(type: SectionType) { return this.all.some((s) => s.type === type && !this.used.has(s.id)); }
 
   /** Retira a primeira seção do tipo (para o modelo posicioná-la num lugar especial). */
@@ -232,8 +233,8 @@ export function Contacts({ c, variant = 'icons', className = '', keys, sep = ' �
 }
 
 export function Photo({ c, className = '', shape }: { c: Ctx; className?: string; shape?: string }) {
-  if (!c.p.photo) return null;
   const sh = c.r.style.photoShape || shape || 'circle';
+  if (!c.p.photo) return c.hasPhoto ? <PhotoSlot className={`ph ph-${sh} ${className}`} /> : null;
   return (
     <div className={`ph ph-${sh} ${c.r.style.grayscale ? 'ph-gray' : ''} ${className}`}>
       <img src={c.p.photo} alt="" />

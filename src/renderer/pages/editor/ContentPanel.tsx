@@ -6,6 +6,7 @@ import type { Item, Resume, Section, SectionType } from '../../types';
 import type { Update } from '../Editor';
 import { LEVEL_LABELS, SECTION_ORDER, SECTION_TYPES, newItem, newSection, sectionTitle, uid } from '../../../shared/model.mjs';
 import { formatRange, parseDate } from '../../../shared/dates.mjs';
+import { loadPhoto } from '../../lib/photo';
 
 type FieldDef = { key: string; label: string; placeholder?: string; type?: string; title?: boolean; half?: boolean };
 const TYPES = SECTION_TYPES as Record<string, { kind: string; icon: string; single?: boolean; fields: FieldDef[] }>;
@@ -151,31 +152,6 @@ function ProfileBlock({ doc, update, open, toggle, flash }: { doc: Resume; updat
       ) : null}
     </div>
   );
-}
-
-/** Reduz a foto para no máximo 900 px (JPEG) — o arquivo do currículo continua leve. */
-async function loadPhoto(file: File): Promise<string> {
-  if (!/^image\/(png|jpe?g|webp)$/.test(file.type)) throw new Error('Use uma imagem JPG, PNG ou WebP.');
-  if (file.size > 25e6) throw new Error('A imagem é muito grande (máximo 25 MB).');
-  const url = URL.createObjectURL(file);
-  try {
-    const img = new Image();
-    img.src = url;
-    await img.decode();
-    const k = Math.min(1, 900 / Math.max(img.naturalWidth, img.naturalHeight));
-    const c = document.createElement('canvas');
-    c.width = Math.round(img.naturalWidth * k);
-    c.height = Math.round(img.naturalHeight * k);
-    const g = c.getContext('2d')!;
-    g.fillStyle = '#fff';
-    g.fillRect(0, 0, c.width, c.height);
-    g.drawImage(img, 0, 0, c.width, c.height);
-    return c.toDataURL('image/jpeg', 0.88);
-  } catch (e) {
-    throw new Error((e as Error).message.includes('decode') ? 'Não foi possível ler esta imagem.' : (e as Error).message);
-  } finally {
-    URL.revokeObjectURL(url);
-  }
 }
 
 function PhotoField({ doc, update }: { doc: Resume; update: Update }) {

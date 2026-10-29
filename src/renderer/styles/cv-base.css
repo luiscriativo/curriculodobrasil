@@ -145,3 +145,7 @@
 .cv-editing div.ie-on, .cv-editing div.ie { display: block; }
 .cv-editing .ie-empty::before, .cv-editing .ie-on:empty::before, .cv-editing .ie-on.ie-blank::before { content: attr(data-ph); color: color-mix(in srgb, currentColor 42%, transparent); font-style: italic; font-weight: 400; pointer-events: none; }
 .cv-editing .ie-empty { min-width: 1.5em; }
+.cv-editing .ph-slot { background: #ecebe8; color: #8e8a85; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: inset 0 0 0 1.5px rgba(0, 0, 0, .08); transition: background .15s, color .15s, box-shadow .15s; container-type: inline-size; }
+.cv-editing .ph-slot:hover, .cv-editing .ph-slot.ph-over, .cv-editing .ph-slot:focus-visible { background: #fbe7f1; color: #f0127f; box-shadow: inset 0 0 0 2px #f0127f; outline: none; }
+.cv-editing .ph-slot-in { display: flex; flex-direction: column; align-items: center; gap: .3em; font: 600 clamp(7px, 9cqi, 13px)/1.2 'Inter Variable', sans-serif; letter-spacing: 0; text-transform: none; text-align: center; pointer-events: none; }
+.cv-editing .ph-slot-in svg { width: clamp(16px, 26cqi, 44px); height: auto; }

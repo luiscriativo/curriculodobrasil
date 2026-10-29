@@ -15,6 +15,7 @@ import { TemplatePanel } from './editor/TemplatePanel';
 import { AtsPanel } from './editor/AtsPanel';
 import { timeAgo } from '../../shared/dates.mjs';
 import { EditCtx, applyEdit, type EditApi } from '../templates/inline';
+import { loadPhoto } from '../lib/photo';
 
 type Tab = 'content' | 'template' | 'style' | 'ats';
 const MM = 96 / 25.4;
@@ -102,10 +103,23 @@ export function Editor({ id, initialTab }: { id: string; initialTab?: string }) 
   }, [persist]);
 
   /** Edição direto no currículo: grava o texto e mostra o campo correspondente no painel */
+  const photoInput = useRef<HTMLInputElement>(null);
+  const usePhoto = useCallback(async (file?: File | null) => {
+    if (!file) return;
+    try {
+      const data = await loadPhoto(file);
+      update((r) => ({ ...r, profile: { ...r.profile, photo: data, photoPos: { x: 50, y: 50, zoom: 1 } } }));
+      toast.show({ kind: 'success', title: 'Foto adicionada', text: 'Ajuste o enquadramento em Conteúdo → Dados pessoais.', timeout: 3500 });
+    } catch (e) {
+      toast.show({ kind: 'error', title: 'Não foi possível usar a foto', text: (e as Error).message });
+    }
+  }, [update, toast]);
+
   const editApi = useMemo<EditApi>(() => ({
     edit: (path, value) => update((r) => applyEdit(r, path, value), { coalesce: path }),
     focus: (path, soft) => { setTab('content'); setFocusTarget(soft ? `${path}|soft` : path); },
-  }), [update]);
+    pickPhoto: (file) => { if (file) usePhoto(file); else photoInput.current?.click(); },
+  }), [update, usePhoto]);
 
   const undo = useCallback(() => {
     const h = hist.current;
@@ -318,6 +332,7 @@ export function Editor({ id, initialTab }: { id: string; initialTab?: string }) 
         </section>
       </div>
       {menu.node}
+      <input ref={photoInput} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => { usePhoto(e.target.files?.[0]); e.target.value = ''; }} />
     </>
   );
 }

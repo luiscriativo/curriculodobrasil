@@ -9,6 +9,8 @@ export interface EditApi {
   edit: (path: string, value: string) => void;
   /** Leva o painel da esquerda até o campo; soft = sem tirar o foco do currículo. */
   focus: (path: string, soft?: boolean) => void;
+  /** Escolher (ou usar a imagem solta) como foto do currículo */
+  pickPhoto: (file?: File) => void;
 }
 export const EditCtx = createContext<EditApi | null>(null);
 
@@ -88,6 +90,24 @@ export function E({ editing, path, value, ph, multiline, block, display }: {
         if (!e.ctrlKey && !e.metaKey) e.stopPropagation();
       }}
       onBlur={() => setOn(false)} />
+  );
+}
+
+/** Espaço da foto no editor quando ainda não há foto: clicar ou soltar uma imagem adiciona. */
+export function PhotoSlot({ className }: { className: string }) {
+  const api = useContext(EditCtx);
+  const [over, setOver] = useState(false);
+  if (!api) return null;
+  return (
+    <div className={`${className} ph-slot ${over ? 'ph-over' : ''}`} role="button" tabIndex={0} title="Adicionar foto" data-own-drop
+      onMouseDown={(e) => { e.preventDefault(); api.pickPhoto(); }} onKeyDown={(e) => { if (e.key === 'Enter') api.pickPhoto(); }}
+      onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
+      onDrop={(e) => { e.preventDefault(); setOver(false); const f = e.dataTransfer.files[0]; if (f) api.pickPhoto(f); }}>
+      <span className="ph-slot-in">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 8h3l2-3h6l2 3h3v11H4zM12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" /></svg>
+        <span>Adicionar foto</span>
+      </span>
+    </div>
   );
 }
 
